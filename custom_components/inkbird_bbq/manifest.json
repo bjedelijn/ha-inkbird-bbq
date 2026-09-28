@@ -1,13 +1,25 @@
 {
   "domain": "inkbird_bbq",
   "name": "INKBIRD BBQ",
-  "codeowners": ["@bjedelijn"],
+  "codeowners": [
+    "@bjedelijn"
+  ],
   "config_flow": true,
-  "dependencies": ["bluetooth"],
+  "dependencies": [
+    "bluetooth"
+  ],
   "documentation": "https://github.com/bjedelijn/ha-inkbird-bbq",
   "integration_type": "device",
-  "iot_class": "local_polling",
+  "iot_class": "local_push",
   "issue_tracker": "https://github.com/bjedelijn/ha-inkbird-bbq/issues",
   "requirements": [],
-  "version": "0.1.0-dev.1"
+  "version": "0.1.0-dev.1",
+  "bluetooth": [
+    {
+      "local_name": "ISC-027BW"
+    },
+    {
+      "local_name": "INT-14-BW"
+    }
+  ]
 }
