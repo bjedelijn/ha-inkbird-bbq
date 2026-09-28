@@ -32,6 +32,20 @@ Why this hardware is recommended:
 
 The proxy should be mounted indoors or in a suitable weatherproof enclosure, reasonably close to the BBQ area and away from access points, switches and other strong RF sources where practical.
 
+## Coexistence with the INKBIRD app and Apple Watch
+
+The integration is intentionally Bluetooth-first while leaving the device's Wi-Fi functionality untouched.
+
+Expected usage for Wi-Fi capable models:
+
+- Home Assistant keeps the local BLE connection through the local adapter or ESPHome Bluetooth proxy.
+- The INKBIRD mobile app uses the device's Wi-Fi/cloud path for remote monitoring.
+- A phone app must not compete with Home Assistant for the same single active BLE connection.
+- For the INT-14-BW, INKBIRD documents Wi-Fi, Bluetooth and Apple Watch monitoring. Community testing also indicates the base can expose a combined Wi-Fi + Bluetooth radio mode.
+- The ISC-027BW officially supports both Wi-Fi and Bluetooth. Apple Watch behavior for this specific model still needs hardware/app validation.
+
+This coexistence model is a development goal, not yet a guaranteed feature. It will be tested on the physical devices before release.
+
 ## Language policy
 
 English is the base language for code, documentation, entity names, comments, strings, issues, pull requests, and release notes. Additional translations can be added later once the integration behavior and terminology are stable.
