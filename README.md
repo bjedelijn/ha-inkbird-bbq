@@ -73,7 +73,16 @@ TNT-11-B automatic discovery is intentionally not implemented yet. Its retail mo
 
 Physical hardware is still required before marking any model as validated and before enabling ISC-027BW control writes.
 
+## Development installation and updates
+
+Until the integration is available through HACS, development/test installations can use the included interactive updater at [scripts/update_inkbird_bbq.sh](scripts/update_inkbird_bbq.sh).
+
+It supports release/branch selection, backups, validation with `ha core check`, rollback on validation failure and an optional Home Assistant restart. See [docs/Updating.md](docs/Updating.md).
+
+HACS is the intended long-term installation and update path for normal users.
+
 ## Protocol research
+
 
 Public reverse-engineering references, protocol families, licensing notes and hardware validation tasks are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md).
 
