@@ -22,6 +22,27 @@ The integration must not assume that the Bluetooth controller is local to the Ho
 
 The proxy is a transport component only. Device protocol logic remains in the model-specific drivers.
 
+## Coexistence test plan: BLE, Wi-Fi and vendor app
+
+A core goal is to preserve the vendor Wi-Fi/app experience while Home Assistant owns the local BLE session.
+
+Known constraints and observations:
+
+- BLE GATT devices in this family may accept only one active BLE client. For the INT-14-BW this is already documented by an existing Home Assistant integration: the phone app and Home Assistant cannot both own the BLE link at the same time.
+- The INT-14-BW supports Wi-Fi and Bluetooth and exposes a Wi-Fi + Bluetooth operating mode in community testing. INKBIRD also documents Apple Watch monitoring for this model.
+- The ISC-027BW officially supports both Wi-Fi and Bluetooth, but model-specific Apple Watch behavior is not yet confirmed.
+- The Home Assistant integration will not disable, reconfigure or take ownership of Wi-Fi unless a future feature explicitly requires it.
+
+Hardware validation matrix:
+
+| Device | HA via BLE | INKBIRD app via Wi-Fi at same time | Apple Watch via app | Status |
+| --- | --- | --- | --- | --- |
+| ISC-027BW | Planned | To validate | To validate | Pending hardware |
+| INT-14-BW | Planned | To validate | Officially advertised; coexistence to validate | Pending hardware |
+| TNT-11-B | To investigate | Not assumed | Not assumed | Pending hardware |
+
+Tests should include starting Home Assistant first, starting the app first, reconnecting Wi-Fi, moving the phone out of BLE range, and verifying that an app opened in the background does not steal the BLE session from Home Assistant when Wi-Fi monitoring is available.
+
 ## ISC-027BW
 
 ### Public BLE research
