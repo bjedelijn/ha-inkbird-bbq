@@ -1,13 +1,48 @@
 {
   "config": {
+    "abort": {
+      "already_configured": "This INKBIRD device is already configured.",
+      "no_devices_found": "No supported INKBIRD BBQ devices have been discovered yet.",
+      "not_supported": "This Bluetooth device is not a supported INKBIRD BBQ model."
+    },
     "step": {
+      "confirm": {
+        "title": "Add {model}",
+        "description": "Add {model} at Bluetooth address {address}?"
+      },
       "user": {
         "title": "INKBIRD BBQ",
-        "description": "Development setup. Bluetooth discovery will replace manual setup.",
+        "description": "Select a supported INKBIRD BBQ device already discovered by Home Assistant.",
         "data": {
-          "name": "Name"
+          "address": "Device"
         }
       }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "pit_temperature": {"name": "Pit temperature"},
+      "meat_probe_1": {"name": "Meat probe 1"},
+      "meat_probe_2": {"name": "Meat probe 2"},
+      "meat_probe_3": {"name": "Meat probe 3"},
+      "fan_output": {"name": "Fan output"},
+      "pit_target": {"name": "Pit target"},
+      "meat_probe_1_alarm": {"name": "Meat probe 1 alarm"},
+      "meat_probe_2_alarm": {"name": "Meat probe 2 alarm"},
+      "meat_probe_3_alarm": {"name": "Meat probe 3 alarm"},
+      "probe_1_core": {"name": "Probe 1 core"},
+      "probe_2_core": {"name": "Probe 2 core"},
+      "probe_3_core": {"name": "Probe 3 core"},
+      "probe_4_core": {"name": "Probe 4 core"},
+      "probe_1_ambient": {"name": "Probe 1 ambient"},
+      "probe_2_ambient": {"name": "Probe 2 ambient"},
+      "probe_3_ambient": {"name": "Probe 3 ambient"},
+      "probe_4_ambient": {"name": "Probe 4 ambient"},
+      "base_battery": {"name": "Base battery"},
+      "probe_1_battery": {"name": "Probe 1 battery"},
+      "probe_2_battery": {"name": "Probe 2 battery"},
+      "probe_3_battery": {"name": "Probe 3 battery"},
+      "probe_4_battery": {"name": "Probe 4 battery"}
     }
   }
 }
