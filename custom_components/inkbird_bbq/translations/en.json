@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "INKBIRD BBQ",
+        "description": "Development setup. Bluetooth discovery will replace manual setup.",
+        "data": {
+          "name": "Name"
+        }
+      }
+    }
+  }
+}
