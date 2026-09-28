@@ -54,6 +54,19 @@ English is the base language for code, documentation, entity names, comments, st
 
 The README should be kept up to date with every meaningful change that affects supported hardware, behavior, setup, architecture, safety, roadmap, or installation.
 
+## Current implementation status
+
+The development branch already contains:
+
+- a shared Home Assistant Bluetooth connection layer designed for local adapters and ESPHome Bluetooth proxies;
+- a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
+- ISC-027BW decoding for pit temperature, three wired meat probes, fan output and configured temperature targets;
+- INT-14-BW protocol primitives for discovery, challenge/response authentication, clock sync, FF02 framing, four core/ambient temperature pairs and battery parsing;
+- protocol unit tests, including a published INT-14-BW authentication test vector;
+- protocol provenance and third-party notices.
+
+The next hardware-independent step is to wire these protocol drivers into model-specific coordinators and Bluetooth discovery. Physical hardware is still required before marking any model as supported or enabling control writes.
+
 ## Protocol research
 
 Public reverse-engineering references, protocol families, licensing notes and hardware validation tasks are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md).
