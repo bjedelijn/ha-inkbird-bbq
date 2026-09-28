@@ -12,6 +12,26 @@ Local Home Assistant integration for INKBIRD BBQ controllers and wireless meat t
 
 The goal is local Bluetooth communication through Home Assistant's Bluetooth stack, including ESPHome Bluetooth proxies. No cloud dependency is planned for normal operation.
 
+## Bluetooth proxy recommendation
+
+This integration is designed to use Home Assistant's native Bluetooth stack. A local Bluetooth adapter works, but for a fixed BBQ/kamado setup a dedicated ESPHome Bluetooth proxy is recommended.
+
+Recommended hardware:
+
+- **Olimex ESP32-POE-ISO-EA**
+- **BOX-ESP32-POE-ISO-EA-F** enclosure
+- Ethernet/PoE connection to the Home Assistant network
+- ESPHome Bluetooth Proxy firmware with active Bluetooth connections enabled
+
+Why this hardware is recommended:
+
+- Ethernet avoids sharing the ESP32 radio between Wi-Fi and Bluetooth.
+- PoE provides a simple, reliable fixed installation.
+- The `-EA` version uses an external antenna, which is useful when the proxy is mounted indoors and the BBQ is outside.
+- Home Assistant can automatically route BLE connections through an ESPHome Bluetooth proxy, so the integration itself does not need proxy-specific code.
+
+The proxy should be mounted indoors or in a suitable weatherproof enclosure, reasonably close to the BBQ area and away from access points, switches and other strong RF sources where practical.
+
 ## Language policy
 
 English is the base language for code, documentation, entity names, comments, strings, issues, pull requests, and release notes. Additional translations can be added later once the integration behavior and terminology are stable.
