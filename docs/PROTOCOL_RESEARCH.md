@@ -6,6 +6,22 @@ This document records public protocol research used while developing INKBIRD BBQ
 
 The integration uses one Home Assistant domain with independent device protocol drivers. The supported devices do not share one wire protocol, even though they share the INKBIRD brand and BBQ use case.
 
+## Bluetooth transport and proxy
+
+The integration must use Home Assistant's Bluetooth APIs rather than connecting directly to BlueZ. This allows Home Assistant to select the best available Bluetooth path, including remote ESPHome Bluetooth proxies.
+
+The reference proxy for development and testing is:
+
+- **Olimex ESP32-POE-ISO-EA**
+- Ethernet + PoE
+- external 2.4 GHz antenna
+- ESPHome Bluetooth Proxy with active connections enabled
+- optional **BOX-ESP32-POE-ISO-EA-F** enclosure
+
+The integration must not assume that the Bluetooth controller is local to the Home Assistant host. Connection, reconnect and discovery behavior will therefore be tested through the Olimex proxy as the primary development path.
+
+The proxy is a transport component only. Device protocol logic remains in the model-specific drivers.
+
 ## ISC-027BW
 
 ### Public BLE research
