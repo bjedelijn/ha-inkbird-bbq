@@ -12,6 +12,14 @@ Local Home Assistant integration for INKBIRD BBQ controllers and wireless meat t
 
 The goal is local Bluetooth communication through Home Assistant's Bluetooth stack, including ESPHome Bluetooth proxies. No cloud dependency is planned for normal operation.
 
+## Language policy
+
+English is the base language for code, documentation, entity names, comments, strings, issues, pull requests, and release notes. Additional translations can be added later once the integration behavior and terminology are stable.
+
+## Development policy
+
+The README should be kept up to date with every meaningful change that affects supported hardware, behavior, setup, architecture, safety, roadmap, or installation.
+
 ## Roadmap
 
 1. Establish the Home Assistant/HACS integration structure.
@@ -19,6 +27,7 @@ The goal is local Bluetooth communication through Home Assistant's Bluetooth sta
 3. Implement read-only temperature/status support for each device.
 4. Add reliable reconnect, availability and diagnostics handling.
 5. Add ISC-027BW controls only after read-only operation is stable and write commands are validated safely.
+6. Add translations after behavior and terminology are stable.
 
 ## Safety
 
