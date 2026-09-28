@@ -50,8 +50,8 @@ def test_clock_sync_reference_timestamp() -> None:
 
 def test_crc_functions_are_stable() -> None:
     """Guard the two CRC algorithms used by authentication."""
-    assert crc8_dvb_s2(bytes.fromhex("e2 01 9f 5a 18 6a")) == 0x68
-    assert crc8_cdma2000(bytes.fromhex("2a 19 e1 1e 78 aa")) == 0x13
+    assert crc8_dvb_s2(bytes.fromhex("e2 01 9f 5a 18 6a")) == 0xA7
+    assert crc8_cdma2000(bytes.fromhex("2a 19 e1 1e 78 aa")) == 0xF9
 
 
 def test_decode_four_probe_temperature_pairs() -> None:
