@@ -20,6 +20,12 @@ English is the base language for code, documentation, entity names, comments, st
 
 The README should be kept up to date with every meaningful change that affects supported hardware, behavior, setup, architecture, safety, roadmap, or installation.
 
+## Protocol research
+
+Public reverse-engineering references, protocol families, licensing notes and hardware validation tasks are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md).
+
+English is the project's base language. Dutch Home Assistant translations are maintained alongside the English strings where practical.
+
 ## Roadmap
 
 1. Establish the Home Assistant/HACS integration structure.
