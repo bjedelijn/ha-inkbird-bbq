@@ -17,6 +17,7 @@ The project is currently in pre-release development.
 - Added English base strings and initial Dutch translations.
 - Added protocol unit tests and CI.\n- Added config-flow and coordinator callback tests for model matching, authentication events, probe mapping, dock state and battery handling.\n- Added ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection.
 - Added CI validation for JSON metadata and updater shell syntax.
+- CI now cross-checks Home Assistant/HACS metadata and the intended Bluetooth discovery model list.
 - Added an interactive Git updater with backup, `ha core check` and rollback.
 - Documented the Olimex ESP32-POE-ISO-EA reference Bluetooth proxy.
 - Documented BLE/Wi-Fi/vendor-app coexistence goals.

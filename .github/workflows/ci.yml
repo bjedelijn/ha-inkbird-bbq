@@ -40,6 +40,32 @@ jobs:
       - name: Validate updater shell syntax
         run: bash -n scripts/update_inkbird_bbq.sh
 
+      - name: Validate Home Assistant integration metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text()
+          )
+          hacs = json.loads(Path("hacs.json").read_text())
+
+          assert manifest["domain"] == "inkbird_bbq"
+          assert manifest["name"] == hacs["name"]
+          assert manifest["config_flow"] is True
+          assert manifest["integration_type"] == "device"
+          assert manifest["iot_class"] == "local_push"
+          assert "bluetooth" in manifest["dependencies"]
+          assert manifest["documentation"].startswith("https://github.com/")
+          assert manifest["issue_tracker"].startswith("https://github.com/")
+          assert manifest["version"]
+          assert {item["local_name"] for item in manifest["bluetooth"]} == {
+              "ISC-027BW",
+              "INT-14-BW",
+          }
+          PY
+
       - name: Ruff
         run: ruff check custom_components tests
 
