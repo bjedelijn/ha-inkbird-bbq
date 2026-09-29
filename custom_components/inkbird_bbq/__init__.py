@@ -2,25 +2,32 @@
 
 from __future__ import annotations
 
-from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from typing import TYPE_CHECKING
 
-from .const import CONF_MODEL
-from .coordinator import InkbirdBbqCoordinator, create_coordinator
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
+    from .coordinator import InkbirdBbqCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
-type InkbirdBbqConfigEntry = ConfigEntry[InkbirdBbqCoordinator]
+type InkbirdBbqConfigEntry = ConfigEntry["InkbirdBbqCoordinator"]
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: "HomeAssistant",
     entry: InkbirdBbqConfigEntry,
 ) -> bool:
     """Set up INKBIRD BBQ from a config entry."""
+    from homeassistant.components import bluetooth
+    from homeassistant.exceptions import ConfigEntryNotReady
+
+    from .const import CONF_MODEL
+    from .coordinator import create_coordinator
+
     if not bluetooth.async_scanner_count(hass, connectable=True):
         raise ConfigEntryNotReady(
             "No connectable Bluetooth adapter or ESPHome proxy is available"
@@ -30,7 +37,7 @@ async def async_setup_entry(
         hass,
         entry,
         model=entry.data[CONF_MODEL],
-        address=entry.data[CONF_ADDRESS],
+        address=entry.data["address"],
     )
     entry.runtime_data = coordinator
     await coordinator.async_start()
@@ -40,7 +47,7 @@ async def async_setup_entry(
 
 
 async def async_unload_entry(
-    hass: HomeAssistant,
+    hass: "HomeAssistant",
     entry: InkbirdBbqConfigEntry,
 ) -> bool:
     """Unload an INKBIRD BBQ config entry."""
