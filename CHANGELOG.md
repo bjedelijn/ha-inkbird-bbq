@@ -8,6 +8,7 @@ The project is currently in pre-release development.
 
 - Added Home Assistant Bluetooth discovery for ISC-027BW and INT-14-BW.
 - Added persistent model-specific BLE coordinators with reconnect handling.
+- Added Bluetooth reconnect-loop tests for missing devices, session failures, disconnect cleanup and cancellation.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.

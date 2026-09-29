@@ -66,6 +66,7 @@ The development branch already contains:
 - INT-14-BW challenge/response authentication, clock sync and current-state requests;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
 - protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
+- Bluetooth reconnect-loop tests cover missing devices, session failures, disconnect cleanup and cancellation;
 - English base strings plus an initial Dutch Home Assistant translation;
 - privacy-safe Home Assistant diagnostics with the Bluetooth address redacted, covered by diagnostics privacy tests;\n- protocol provenance and third-party notices.
 
