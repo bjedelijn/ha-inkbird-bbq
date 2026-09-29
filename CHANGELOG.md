@@ -21,6 +21,7 @@ The project is currently in pre-release development.
 - Documented the Olimex ESP32-POE-ISO-EA reference Bluetooth proxy.
 - Documented BLE/Wi-Fi/vendor-app coexistence goals.
 - Added a hardware validation plan for ISC-027BW, INT-14-BW and TNT-11-B.\n- Separated currently supported models from planned TNT-11-B support and added coordinator-factory boundary tests.\n- Pass the config entry explicitly to Home Assistant's DataUpdateCoordinator for current HA compatibility.
+- Use Home Assistant's `CONF_ADDRESS` constant consistently when setting up config entries.
 
 ## 0.1.0-dev.1
 

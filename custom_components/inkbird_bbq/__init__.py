@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import CONF_ADDRESS, Platform
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -37,7 +37,7 @@ async def async_setup_entry(
         hass,
         entry,
         model=entry.data[CONF_MODEL],
-        address=entry.data["address"],
+        address=entry.data[CONF_ADDRESS],
     )
     entry.runtime_data = coordinator
     await coordinator.async_start()
