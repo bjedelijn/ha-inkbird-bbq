@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from .coordinator import InkbirdBbqCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 type InkbirdBbqConfigEntry = ConfigEntry["InkbirdBbqCoordinator"]
 

@@ -62,12 +62,12 @@ The development branch already contains:
 - automatic Bluetooth discovery for ISC-027BW and INT-14-BW using exact model-name matching;
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
-- read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output and configured target/alarm temperatures;
+- read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
 - INT-14-BW challenge/response authentication, clock sync and current-state requests;
-- read-only INT-14-BW entities for four core temperatures, four ambient temperatures and available battery information;
+- read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
 - protocol unit tests, including a published INT-14-BW authentication test vector;
 - English base strings plus an initial Dutch Home Assistant translation;
-- protocol provenance and third-party notices.
+- privacy-safe Home Assistant diagnostics with the Bluetooth address redacted;\n- protocol provenance and third-party notices.
 
 TNT-11-B automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
