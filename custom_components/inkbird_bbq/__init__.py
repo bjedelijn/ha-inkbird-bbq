@@ -18,7 +18,7 @@ type InkbirdBbqConfigEntry = ConfigEntry["InkbirdBbqCoordinator"]
 
 
 async def async_setup_entry(
-    hass: "HomeAssistant",
+    hass: HomeAssistant,
     entry: InkbirdBbqConfigEntry,
 ) -> bool:
     """Set up INKBIRD BBQ from a config entry."""
@@ -47,7 +47,7 @@ async def async_setup_entry(
 
 
 async def async_unload_entry(
-    hass: "HomeAssistant",
+    hass: HomeAssistant,
     entry: InkbirdBbqConfigEntry,
 ) -> bool:
     """Unload an INKBIRD BBQ config entry."""
