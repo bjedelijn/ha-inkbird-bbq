@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import voluptuous as vol
 from typing import TYPE_CHECKING, Any
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers.device_registry import format_mac
