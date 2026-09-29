@@ -19,7 +19,7 @@ The project is currently in pre-release development.
 - Added an interactive Git updater with backup, `ha core check` and rollback.
 - Documented the Olimex ESP32-POE-ISO-EA reference Bluetooth proxy.
 - Documented BLE/Wi-Fi/vendor-app coexistence goals.
-- Added a hardware validation plan for ISC-027BW, INT-14-BW and TNT-11-B.\n- Separated currently supported models from planned TNT-11-B support and added coordinator-factory boundary tests.
+- Added a hardware validation plan for ISC-027BW, INT-14-BW and TNT-11-B.\n- Separated currently supported models from planned TNT-11-B support and added coordinator-factory boundary tests.\n- Pass the config entry explicitly to Home Assistant's DataUpdateCoordinator for current HA compatibility.
 
 ## 0.1.0-dev.1
 

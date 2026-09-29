@@ -56,6 +56,7 @@ class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=f"INKBIRD BBQ {model}",
         )
         self.entry = entry
