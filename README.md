@@ -8,7 +8,7 @@ Local Home Assistant integration for INKBIRD BBQ controllers and wireless meat t
 
 - INKBIRD ISC-027BW smoker/kamado fan controller
 - INKBIRD INT-14-BW wireless meat thermometer
-- INKBIRD TNT-11-B wireless meat thermometer
+- INKBIRD TNT-11-B wireless meat thermometer *(planned; protocol validation pending)*
 
 The goal is local Bluetooth communication through Home Assistant's Bluetooth stack, including ESPHome Bluetooth proxies. No cloud dependency is planned for normal Home Assistant operation.
 
@@ -69,7 +69,7 @@ The development branch already contains:
 - English base strings plus an initial Dutch Home Assistant translation;
 - privacy-safe Home Assistant diagnostics with the Bluetooth address redacted;\n- protocol provenance and third-party notices.
 
-TNT-11-B automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
+TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
 Physical hardware is still required before marking any model as validated and before enabling ISC-027BW control writes.
 
