@@ -125,32 +125,17 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
         async def _read_once() -> None:
             telemetry_raw = bytes(await client.read_gatt_char(CHAR_TELEMETRY))
-            telemetry = decode_telemetry(telemetry_raw)
-
-            values: dict[str, Any] = {
-                "pit_temperature": telemetry.pit_temperature,
-                "meat_probe_1": telemetry.meat_probe_1,
-                "meat_probe_2": telemetry.meat_probe_2,
-                "meat_probe_3": telemetry.meat_probe_3,
-                "fan_output": telemetry.fan_output,
-            }
+            values = self._decode_telemetry_values(telemetry_raw)
 
             try:
                 targets_raw = bytes(await client.read_gatt_char(CHAR_TARGETS))
-                targets = decode_targets(targets_raw)
-                values.update(
-                    pit_target=targets.pit_target,
-                    meat_probe_1_alarm=targets.meat_probe_1_alarm,
-                    meat_probe_2_alarm=targets.meat_probe_2_alarm,
-                    meat_probe_3_alarm=targets.meat_probe_3_alarm,
-                )
+                values.update(self._decode_target_values(targets_raw))
             except Exception as err:  # noqa: BLE001 - optional read path
                 _LOGGER.debug("ISC-027BW FFF3 read failed: %s", err)
 
             try:
                 fan_raw = bytes(await client.read_gatt_char(CHAR_FAN))
-                if fan_raw:
-                    values["fan_on"] = bool(fan_raw[0])
+                values.update(self._decode_fan_values(fan_raw))
             except Exception as err:  # noqa: BLE001 - optional read path
                 _LOGGER.debug("ISC-027BW FFF1 read failed: %s", err)
 
@@ -164,6 +149,36 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
                 pass
 
         self._set_available(False)
+
+    @staticmethod
+    def _decode_telemetry_values(data: bytes) -> dict[str, Any]:
+        """Decode an ISC-027BW FFF2 telemetry frame into coordinator values."""
+        telemetry = decode_telemetry(data)
+        return {
+            "pit_temperature": telemetry.pit_temperature,
+            "meat_probe_1": telemetry.meat_probe_1,
+            "meat_probe_2": telemetry.meat_probe_2,
+            "meat_probe_3": telemetry.meat_probe_3,
+            "fan_output": telemetry.fan_output,
+        }
+
+    @staticmethod
+    def _decode_target_values(data: bytes) -> dict[str, Any]:
+        """Decode an ISC-027BW FFF3 target frame into coordinator values."""
+        targets = decode_targets(data)
+        return {
+            "pit_target": targets.pit_target,
+            "meat_probe_1_alarm": targets.meat_probe_1_alarm,
+            "meat_probe_2_alarm": targets.meat_probe_2_alarm,
+            "meat_probe_3_alarm": targets.meat_probe_3_alarm,
+        }
+
+    @staticmethod
+    def _decode_fan_values(data: bytes) -> dict[str, Any]:
+        """Decode the safe read-only fan state from FFF1."""
+        if not data:
+            return {}
+        return {"fan_on": bool(data[0])}
 
 
 class Int14bwCoordinator(InkbirdBbqCoordinator):

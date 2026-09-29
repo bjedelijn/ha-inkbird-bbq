@@ -65,7 +65,7 @@ The development branch already contains:
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
 - INT-14-BW challenge/response authentication, clock sync and current-state requests;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
-- protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
+- protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
 - English base strings plus an initial Dutch Home Assistant translation;
 - privacy-safe Home Assistant diagnostics with the Bluetooth address redacted;\n- protocol provenance and third-party notices.
 
@@ -82,7 +82,6 @@ It supports release/branch selection, backups, validation with `ha core check`, 
 HACS is the intended long-term installation and update path for normal users.
 
 ## Protocol research
-
 
 Public reverse-engineering references and protocol notes are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md). The physical-device test procedure is maintained in [docs/Hardware-Validation.md](docs/Hardware-Validation.md).
 
