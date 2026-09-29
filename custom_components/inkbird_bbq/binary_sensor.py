@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -17,7 +17,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
 from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
-from .coordinator import InkbirdBbqCoordinator
+if TYPE_CHECKING:
+    from .coordinator import InkbirdBbqCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -69,7 +70,7 @@ async def async_setup_entry(
 
 
 class InkbirdBbqBinarySensor(
-    CoordinatorEntity[InkbirdBbqCoordinator],
+    CoordinatorEntity[Any],
     BinarySensorEntity,
 ):
     """Representation of an INKBIRD BBQ binary sensor."""
