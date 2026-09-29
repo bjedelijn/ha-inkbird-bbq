@@ -7,9 +7,9 @@ Paul Faure (paul43210/inkbird-bw-ble) and Boris Pustilnik
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import struct
 import time
+from dataclasses import dataclass
 
 MODEL = "INT-14-BW"
 LOCAL_NAME = "INT-14-BW"
