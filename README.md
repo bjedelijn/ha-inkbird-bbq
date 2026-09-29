@@ -84,7 +84,7 @@ HACS is the intended long-term installation and update path for normal users.
 ## Protocol research
 
 
-Public reverse-engineering references, protocol families, licensing notes and hardware validation tasks are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md).
+Public reverse-engineering references and protocol notes are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md). The physical-device test procedure is maintained in [docs/Hardware-Validation.md](docs/Hardware-Validation.md).
 
 ## Roadmap
 
@@ -99,6 +99,10 @@ Public reverse-engineering references, protocol families, licensing notes and ha
 ## Safety
 
 The ISC-027BW controls combustion airflow. Early versions will remain read-only. Fan/setpoint writes will only be enabled after protocol validation and fail-safe behavior are implemented.
+
+## Changelog
+
+Development history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
