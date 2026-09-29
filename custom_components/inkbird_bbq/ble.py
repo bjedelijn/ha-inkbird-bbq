@@ -6,13 +6,15 @@ import asyncio
 import contextlib
 import logging
 from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
-from homeassistant.components import bluetooth
-from homeassistant.components.bluetooth import BluetoothCallbackMatcher
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +38,9 @@ class InkbirdBluetoothConnection:
         self, timeout: float = DEFAULT_ADVERTISEMENT_TIMEOUT
     ) -> BLEDevice | None:
         """Wait for a fresh advertisement and return HA's selected BLEDevice."""
+        from homeassistant.components import bluetooth
+        from homeassistant.components.bluetooth import BluetoothCallbackMatcher
+
         event = asyncio.Event()
         found: dict[str, BLEDevice] = {}
 
@@ -63,6 +68,8 @@ class InkbirdBluetoothConnection:
 
     async def async_resolve_device(self) -> BLEDevice | None:
         """Resolve a connectable device, preferring a fresh advertisement."""
+        from homeassistant.components import bluetooth
+
         device = await self.async_wait_for_advertisement()
         if device is not None:
             return device

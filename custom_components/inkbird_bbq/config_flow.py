@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import voluptuous as vol
-from homeassistant.components.bluetooth import (
-    BluetoothServiceInfoBleak,
-    async_discovered_service_info,
-)
+from typing import TYPE_CHECKING, Any
+
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers.device_registry import format_mac
 
 from .const import AUTO_DISCOVERY_NAMES, CONF_MODEL, DOMAIN
+
+if TYPE_CHECKING:
+    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 
 
 def _model_from_name(name: str | None) -> str | None:
@@ -80,6 +79,8 @@ class InkbirdBbqConfigFlow(ConfigFlow, domain=DOMAIN):
         user_input: dict[str, Any] | None = None,
     ) -> ConfigFlowResult:
         """Offer supported devices already seen by Home Assistant."""
+        from homeassistant.components.bluetooth import async_discovered_service_info
+
         discovered: dict[str, tuple[str, str]] = {}
 
         for info in async_discovered_service_info(self.hass):
