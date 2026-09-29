@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
 import contextlib
 import logging
+from collections.abc import Awaitable, Callable
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
