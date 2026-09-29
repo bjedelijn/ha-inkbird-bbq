@@ -12,7 +12,7 @@ The project is currently in pre-release development.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.
 - Added read-only INT-14-BW core/ambient temperature, battery and dock-state entities.
-- Added privacy-safe Home Assistant diagnostics.
+- Added privacy-safe Home Assistant diagnostics and diagnostics privacy tests for Bluetooth-address redaction.
 - Added English base strings and initial Dutch translations.
 - Added protocol unit tests and CI.\n- Added config-flow and coordinator callback tests for model matching, authentication events, probe mapping, dock state and battery handling.\n- Added ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection.
 - Added CI validation for JSON metadata and updater shell syntax.

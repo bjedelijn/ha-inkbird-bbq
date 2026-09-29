@@ -14,16 +14,29 @@ _TO_REDACT = {
 }
 
 
+def _build_diagnostics(
+    entry_data: dict[str, Any],
+    *,
+    model: str,
+    coordinator_data: dict[str, Any],
+) -> dict[str, Any]:
+    """Build privacy-safe diagnostics data."""
+    return {
+        "entry": async_redact_data(dict(entry_data), _TO_REDACT),
+        "model": model,
+        "available": bool(coordinator_data.get("available")),
+        "data": async_redact_data(dict(coordinator_data), _TO_REDACT),
+    }
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: InkbirdBbqConfigEntry,
 ) -> dict[str, Any]:
     """Return privacy-safe diagnostics for a config entry."""
     coordinator = entry.runtime_data
-
-    return {
-        "entry": async_redact_data(dict(entry.data), _TO_REDACT),
-        "model": coordinator.model,
-        "available": bool(coordinator.data.get("available")),
-        "data": async_redact_data(dict(coordinator.data), _TO_REDACT),
-    }
+    return _build_diagnostics(
+        dict(entry.data),
+        model=coordinator.model,
+        coordinator_data=dict(coordinator.data),
+    )
