@@ -214,10 +214,7 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
         """Decode fan state and configured fan setpoint from FFF1."""
         if not data:
             return {}
-        values: dict[str, Any] = {"fan_on": bool(data[0])}
-        if len(data) > 6 and data[6] <= 100:
-            values["fan_setpoint"] = data[6]
-        return values
+        return {"fan_on": bool(data[0])}
 
     async def async_set_fan_on(self, fan_on: bool) -> None:
         """Experimentally set ISC-027BW fan on/off and verify by readback."""
@@ -227,20 +224,6 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             self._fff1_current = current
             self._publish(**self._decode_fan_values(current))
             frame = build_fan_control_frame(current, fan_on=fan_on)
-            await client.write_gatt_char(CHAR_FAN, frame, response=True)
-            await asyncio.sleep(0.25)
-            readback = bytes(await client.read_gatt_char(CHAR_FAN))
-            self._fff1_current = readback
-            self._publish(**self._decode_fan_values(readback))
-
-    async def async_set_fan_setpoint(self, speed: int) -> None:
-        """Experimentally set ISC-027BW fan setpoint and verify by readback."""
-        client = self._require_client()
-        async with self._io_lock:
-            current = bytes(await client.read_gatt_char(CHAR_FAN))
-            self._fff1_current = current
-            self._publish(**self._decode_fan_values(current))
-            frame = build_fan_control_frame(current, speed=speed)
             await client.write_gatt_char(CHAR_FAN, frame, response=True)
             await asyncio.sleep(0.25)
             readback = bytes(await client.read_gatt_char(CHAR_FAN))

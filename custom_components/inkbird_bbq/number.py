@@ -63,16 +63,6 @@ INT14BW_NUMBERS = (
 
 ISC027BW_NUMBERS = (
     InkbirdNumberDescription(
-        key="fan_setpoint_control",
-        translation_key="fan_setpoint_control",
-        data_key="fan_setpoint",
-        native_min_value=0,
-        native_max_value=100,
-        native_step=1,
-        native_unit_of_measurement=PERCENTAGE,
-        entity_category=EntityCategory.CONFIG,
-    ),
-    InkbirdNumberDescription(
         key="pit_target_control",
         translation_key="pit_target_control",
         data_key="pit_target",
@@ -164,9 +154,6 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
                 return
 
         if isinstance(self.coordinator, Isc027bwCoordinator):
-            if key == "fan_setpoint_control":
-                await self.coordinator.async_set_fan_setpoint(round(value))
-                return
             if key == "pit_target_control":
                 await self.coordinator.async_set_pit_target(value)
                 return

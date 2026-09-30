@@ -63,7 +63,7 @@ Documented frame properties:
 - Temperature values are unsigned little-endian Fahrenheit x10.
 - CRC16-Modbus is calculated over bytes 0-17 and stored in bytes 18-19.
 - FFF2 bytes 0-7 contain four temperature values; byte 8 contains actual fan output in percent.
-- FFF1 byte 0 represents fan on/off; byte 6 has been documented as fan speed setpoint.
+- FFF1 byte 0 represents fan on/off. Public reverse engineering describes byte 6 as a fan speed field, but this has not proven to be a user-settable fan power on the physical unit.
 - FFF3 contains grill target temperature and probe alarm targets.
 
 ### Independent Wi-Fi/Tuya research
@@ -81,7 +81,7 @@ Before enabling writes we will verify on our physical unit:
 - exact FFF1/FFF2/FFF3 lengths and properties;
 - CRC byte order;
 - temperature conversion and invalid/sentinel values;
-- fan state and fan-output semantics;
+- fan state and fan-output semantics; the physical ISC-027BW automatically regulates fan output and the tested BLE control exposes on/off rather than a user-settable power percentage;
 - target-temperature encoding;
 - probe alarm offsets;
 - reconnect behavior through an ESPHome Bluetooth proxy;

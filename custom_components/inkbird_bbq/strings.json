@@ -124,9 +124,6 @@
       "auto_sleep_control": {
         "name": "Set auto sleep (experimental)"
       },
-      "fan_setpoint_control": {
-        "name": "Set fan power (experimental)"
-      },
       "pit_target_control": {
         "name": "Set pit target (experimental)"
       },

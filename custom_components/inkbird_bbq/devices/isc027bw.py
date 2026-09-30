@@ -1,4 +1,4 @@
-"""Read-only protocol support for the INKBIRD ISC-027BW."""
+"""Protocol support for the INKBIRD ISC-027BW."""
 
 from __future__ import annotations
 

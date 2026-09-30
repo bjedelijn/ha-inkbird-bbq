@@ -93,12 +93,13 @@ def test_bad_length_is_rejected() -> None:
 
 
 
-def test_build_fan_control_frame_preserves_crc_and_sets_values() -> None:
-    current = _frame(bytes(18))
-    updated = build_fan_control_frame(current, fan_on=True, speed=30)
+def test_build_fan_control_frame_preserves_automatic_control_fields() -> None:
+    current = bytearray(_frame(bytes(18)))
+    current[6] = 73
+    updated = build_fan_control_frame(bytes(current), fan_on=True)
 
     assert updated[0] == 1
-    assert updated[6] == 30
+    assert updated[6] == 73
     assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
 
 

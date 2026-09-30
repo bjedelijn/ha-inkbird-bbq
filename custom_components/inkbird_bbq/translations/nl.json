@@ -124,9 +124,6 @@
       "auto_sleep_control": {
         "name": "Automatisch slapen instellen (experimenteel)"
       },
-      "fan_setpoint_control": {
-        "name": "Ventilatorvermogen instellen (experimenteel)"
-      },
       "pit_target_control": {
         "name": "Kamado doeltemperatuur instellen (experimenteel)"
       },

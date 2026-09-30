@@ -15,7 +15,6 @@ def test_control_number_sets_are_model_specific() -> None:
         "auto_sleep_control",
     }
     assert {item.key for item in ISC027BW_NUMBERS} == {
-        "fan_setpoint_control",
         "pit_target_control",
         "probe_1_alarm_control",
         "probe_2_alarm_control",

@@ -124,7 +124,7 @@ Validate in this order:
 1. pit target: change a small amount, confirm the controller display/app changes, then restore it;
 2. one probe alarm target: change, confirm, restore;
 3. blower physically disconnected from the kamado: fan on/off;
-4. blower still on the bench: fan setpoint 10%, 30%, 50%, then 0%;
+4. reconnect the grill probe and confirm the ISC automatically regulates fan output; actual output is read from FFF2 and is not user-adjustable;
 5. verify every write is reflected by the immediate FFF1/FFF3 readback;
 6. power-cycle and confirm the final values persist or reset exactly as the controller documents.
 

@@ -63,7 +63,7 @@ The development branch already contains:
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
-- disabled-by-default experimental ISC-027BW controls for fan on/off, fan setpoint, pit target and three probe alarm targets, with fresh-frame read/modify/write and immediate readback;
+- disabled-by-default experimental ISC-027BW controls for fan on/off, pit target and three probe alarm targets, with fresh-frame read/modify/write and immediate readback; fan power is reported as actual automatic output and is not user-adjustable;
 - INT-14-BW challenge/response authentication, clock sync, current-state requests and safe read-only settings queries;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
 - read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; setting reads use individual FF02 requests plus FF02 characteristic readback/retry because the first physical tests did not return these values through notifications;
