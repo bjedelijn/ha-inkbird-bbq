@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
-from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
+from .const import DOMAIN, MANUFACTURER, MODEL_ISC_027BW
 from .coordinator import InkbirdBbqCoordinator, Int14bwCoordinator, Isc027bwCoordinator
 
 
@@ -26,8 +26,6 @@ async def async_setup_entry(
 
     if coordinator.model == MODEL_ISC_027BW:
         async_add_entities([InkbirdExperimentalSwitch(coordinator, "fan_control")])
-    elif coordinator.model == MODEL_INT_14_BW:
-        async_add_entities([InkbirdExperimentalSwitch(coordinator, "wifi_control")])
 
 
 class InkbirdExperimentalSwitch(
@@ -70,11 +68,6 @@ class InkbirdExperimentalSwitch(
         ):
             await self.coordinator.async_set_fan_on(True)
             return
-        if self._key == "wifi_control" and isinstance(
-            self.coordinator, Int14bwCoordinator
-        ):
-            await self.coordinator.async_set_wifi_enabled(True)
-            return
         raise RuntimeError(f"Unsupported experimental switch: {self._key}")
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -82,11 +75,6 @@ class InkbirdExperimentalSwitch(
             self.coordinator, Isc027bwCoordinator
         ):
             await self.coordinator.async_set_fan_on(False)
-            return
-        if self._key == "wifi_control" and isinstance(
-            self.coordinator, Int14bwCoordinator
-        ):
-            await self.coordinator.async_set_wifi_enabled(False)
             return
         raise RuntimeError(f"Unsupported experimental switch: {self._key}")
 
