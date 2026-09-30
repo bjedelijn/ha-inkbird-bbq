@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .ble import InkbirdBluetoothConnection, async_connection_loop
-from .const import MODEL_INT_14_BW, MODEL_ISC_027BW
+from .const import MODEL_INT_14_BW, MODEL_ISC_027BW, MODEL_TNT_11_B
 from .devices.int14bw import (
     CHAR_BATTERY,
     CHAR_CONTROL,
@@ -32,6 +32,10 @@ from .devices.int14bw import (
     parse_ff02_frames,
     parse_target_report,
     parse_temperature_unit,
+)
+from .devices.tnt11b import (
+    CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
+    decode_notification as decode_tnt_notification,
 )
 from .devices.isc027bw import (
     CHAR_FAN,
@@ -562,6 +566,45 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         self._publish(**values)
 
 
+class Tnt11bCoordinator(InkbirdBbqCoordinator):
+    """Bluetooth coordinator for the BG-BT1W / TNT-11-B."""
+
+    async def _session(self, client: BleakClient) -> None:
+        self._client = client
+        await client.start_notify(TNT_CHAR_TEMPERATURE, self._on_temperature)
+        self._set_available(True)
+
+        while client.is_connected and not self._stop.is_set():
+            try:
+                await asyncio.wait_for(self._stop.wait(), timeout=30)
+            except TimeoutError:
+                pass
+
+        self._client = None
+        self._set_available(False)
+
+    def _on_temperature(
+        self,
+        _characteristic: BleakGATTCharacteristic | None,
+        data: bytearray,
+    ) -> None:
+        try:
+            reading = decode_tnt_notification(bytes(data))
+        except ValueError as err:
+            _LOGGER.debug("Ignoring malformed BG-BT1W FF03 frame: %s", err)
+            return
+
+        self._publish(
+            probe_temperature=reading.food_temperature,
+            raw_packet=reading.raw.hex(),
+        )
+        _LOGGER.debug(
+            "BG-BT1W FF03 RX: %s -> %.2f C",
+            reading.raw.hex(),
+            reading.food_temperature,
+        )
+
+
 def create_coordinator(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -574,4 +617,6 @@ def create_coordinator(
         return Isc027bwCoordinator(hass, entry, address)
     if model == MODEL_INT_14_BW:
         return Int14bwCoordinator(hass, entry, address)
+    if model == MODEL_TNT_11_B:
+        return Tnt11bCoordinator(hass, entry, address)
     raise ValueError(f"Unsupported INKBIRD BBQ model: {model}")
