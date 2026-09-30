@@ -1,4 +1,4 @@
-"""Read-only protocol support for the INKBIRD INT-14-BW.
+"""Protocol support for the INKBIRD INT-14-BW.
 
 Protocol behavior is based on public MIT-licensed reverse engineering by
 Paul Faure (paul43210/inkbird-bw-ble) and Boris Pustilnik
@@ -254,6 +254,49 @@ def build_brightness_write(percent: int) -> bytes:
     if not 0 <= percent <= 100:
         raise ValueError("Brightness must be between 0 and 100")
     return bytes((0x02, 0x05, percent))
+
+
+def celsius_to_target_raw(value: float) -> int:
+    """Encode an INT-14-BW target as degrees Celsius x10."""
+    if not 0 <= value <= 100:
+        raise ValueError("Target temperature must be between 0 and 100 C")
+    return round(value * 10)
+
+
+def build_target_temperature_write(
+    probe: int,
+    target_celsius: float,
+    *,
+    low_raw: int = 0,
+    doneness: int = 0,
+    food_code: int = 0,
+) -> bytes:
+    """Build an FF02 target-temperature command for one probe."""
+    if probe not in range(1, NUM_PROBES + 1):
+        raise ValueError("Probe must be between 1 and 4")
+    if not 0 <= low_raw <= 0xFFFF:
+        raise ValueError("Low target must fit in an unsigned 16-bit value")
+    if not 0 <= doneness <= 0xFF:
+        raise ValueError("Doneness must fit in one byte")
+    if not 0 <= food_code <= 0xFF:
+        raise ValueError("Food code must fit in one byte")
+
+    target_raw = celsius_to_target_raw(target_celsius)
+    mask = 1 << (probe - 1)
+    return bytes(
+        (
+            0x09,
+            0x01,
+            mask,
+            0x10,
+            target_raw & 0xFF,
+            (target_raw >> 8) & 0xFF,
+            low_raw & 0xFF,
+            (low_raw >> 8) & 0xFF,
+            doneness,
+            food_code,
+        )
+    )
 
 
 
