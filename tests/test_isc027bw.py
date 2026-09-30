@@ -96,6 +96,7 @@ def test_bad_length_is_rejected() -> None:
 def test_build_fan_control_frame_preserves_automatic_control_fields() -> None:
     current = bytearray(_frame(bytes(18)))
     current[6] = 73
+    struct.pack_into("<H", current, 18, crc16_modbus(bytes(current[:18])))
     updated = build_fan_control_frame(bytes(current), fan_on=True)
 
     assert updated[0] == 1
