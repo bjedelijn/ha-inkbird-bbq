@@ -13,7 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
 from .const import DOMAIN, MANUFACTURER, MODEL_ISC_027BW
-from .coordinator import InkbirdBbqCoordinator, Int14bwCoordinator, Isc027bwCoordinator
+from .coordinator import InkbirdBbqCoordinator, Isc027bwCoordinator
 
 
 async def async_setup_entry(
