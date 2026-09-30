@@ -13,10 +13,12 @@ from homeassistant.components.number import (
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    Platform,
     UnitOfTemperature,
     UnitOfTime,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -90,6 +92,27 @@ ISC027BW_NUMBERS = (
 )
 
 
+def _remove_obsolete_fan_setpoint_entity(
+    hass: Any,
+    coordinator: InkbirdBbqCoordinator,
+) -> None:
+    """Remove the old ISC fan-power control from the entity registry."""
+    if coordinator.model != MODEL_ISC_027BW:
+        return
+
+    unique_id = (
+        f"{coordinator.address}_fan_setpoint_control".lower().replace(":", "")
+    )
+    entity_registry = er.async_get(hass)
+    entity_id = entity_registry.async_get_entity_id(
+        Platform.NUMBER,
+        DOMAIN,
+        unique_id,
+    )
+    if entity_id is not None:
+        entity_registry.async_remove(entity_id)
+
+
 async def async_setup_entry(
     hass: Any,
     entry: InkbirdBbqConfigEntry,
@@ -97,6 +120,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up disabled-by-default experimental number controls."""
     coordinator = entry.runtime_data
+    _remove_obsolete_fan_setpoint_entity(hass, coordinator)
     descriptions = (
         ISC027BW_NUMBERS
         if coordinator.model == MODEL_ISC_027BW
