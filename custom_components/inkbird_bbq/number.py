@@ -47,6 +47,20 @@ INT14BW_NUMBERS = (
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.CONFIG,
     ),
+    *(
+        InkbirdNumberDescription(
+            key=f"probe_{probe}_target_control",
+            translation_key=f"probe_{probe}_target_control",
+            data_key=f"probe_{probe}_target",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            mode=NumberMode.BOX,
+            entity_category=EntityCategory.CONFIG,
+        )
+        for probe in range(1, 5)
+    ),
 )
 
 ISC027BW_NUMBERS = (
@@ -74,20 +88,6 @@ ISC027BW_NUMBERS = (
             entity_category=EntityCategory.CONFIG,
         )
         for probe in range(1, 4)
-    ),
-    *(
-        InkbirdNumberDescription(
-            key=f"probe_{probe}_target_control",
-            translation_key=f"probe_{probe}_target_control",
-            data_key=f"probe_{probe}_target",
-            native_min_value=0,
-            native_max_value=100,
-            native_step=1,
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            mode=NumberMode.BOX,
-            entity_category=EntityCategory.CONFIG,
-        )
-        for probe in range(1, 5)
     ),
 )
 
@@ -151,6 +151,10 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
             if key == "display_brightness_control":
                 await self.coordinator.async_set_display_brightness(round(value))
                 return
+            if key.startswith("probe_") and key.endswith("_target_control"):
+                probe = int(key.split("_")[1])
+                await self.coordinator.async_set_probe_target(probe, value)
+                return
         if isinstance(self.coordinator, Isc027bwCoordinator):
             if key == "pit_target_control":
                 await self.coordinator.async_set_pit_target(value)
@@ -158,10 +162,6 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
             if key.startswith("probe_") and key.endswith("_alarm_control"):
                 probe = int(key.split("_")[1])
                 await self.coordinator.async_set_probe_alarm(probe, value)
-                return
-            if key.startswith("probe_") and key.endswith("_target_control"):
-                probe = int(key.split("_")[1])
-                await self.coordinator.async_set_probe_target(probe, value)
                 return
 
         raise RuntimeError(f"Unsupported experimental number control: {key}")
