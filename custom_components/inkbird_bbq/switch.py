@@ -21,7 +21,7 @@ async def async_setup_entry(
     entry: InkbirdBbqConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up disabled-by-default experimental switches."""
+    """Set up experimental switches."""
     coordinator = entry.runtime_data
 
     if coordinator.model == MODEL_ISC_027BW:
@@ -36,7 +36,7 @@ class InkbirdExperimentalSwitch(
 
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator: InkbirdBbqCoordinator, key: str) -> None:
         super().__init__(coordinator)
