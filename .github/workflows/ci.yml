@@ -63,6 +63,7 @@ jobs:
           assert {item["local_name"] for item in manifest["bluetooth"]} == {
               "ISC-027BW",
               "INT-14-BW",
+              "INT-14-BW_WH",
           }
           PY
 

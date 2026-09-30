@@ -59,7 +59,7 @@ The README should be kept up to date with every meaningful change that affects s
 The development branch already contains:
 
 - a shared Home Assistant Bluetooth connection layer designed for local adapters and ESPHome Bluetooth proxies;
-- automatic Bluetooth discovery for ISC-027BW and INT-14-BW using exact model-name matching;
+- automatic Bluetooth discovery for ISC-027BW and INT-14-BW using confirmed BLE names, including the physically observed `INT-14-BW_WH` advertisement;
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
@@ -72,7 +72,9 @@ The development branch already contains:
 
 TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
-Physical hardware is still required before marking any model as validated and before enabling ISC-027BW control writes.
+The first physical INT-14-BW has now been detected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. GATT authentication and telemetry still require live validation before the model is marked hardware validated.
+
+Physical hardware validation is still required before enabling ISC-027BW control writes.
 
 ## Development installation and updates
 
