@@ -125,11 +125,16 @@ Before any write support is merged, separately validate:
 
 ### Discovery
 
-Confirm:
+Confirmed on physical hardware through the Olimex ESPHome Bluetooth proxy:
 
-- exact advertised local name is `INT-14-BW`;
-- FF00 vendor service exists;
-- FF01, FF02 and FF03 properties;
+- advertised local name is `INT-14-BW_WH`;
+- advertisement is connectable;
+- vendor service UUID FF00 is advertised;
+- manufacturer data and service data are empty in the observed advertisement.
+
+Continue to verify:
+
+- FF01, FF02 and FF03 properties after connecting;
 - standard battery characteristic 2A19 behavior.
 
 Look-alike models such as INT-14S-BW or INT-12I-BW must not be matched automatically.
@@ -147,25 +152,34 @@ Capture and verify:
 
 ### Probe telemetry
 
-For each of four probes, validate:
+Confirmed on physical hardware:
 
-- core/internal temperature;
-- ambient temperature;
-- probe numbering/order;
+- all four dock states are reported correctly while probes are in the charging station;
+- docked probes are exposed as unavailable/unknown for temperature;
+- removing probe 1 changes its dock state immediately;
+- probe 1 then reports both core and ambient temperature;
+- first room-temperature observation reported 23.0 °C core and 23.0 °C ambient.
+
+Still validate:
+
+- probes 2, 3 and 4 individually;
+- deliberately different temperatures per probe so channel mapping is unambiguous;
+- core versus ambient offset using unequal temperatures;
 - unavailable/sentinel values;
-- docked state;
-- removal from dock;
-- return to dock.
-
-Use deliberately different temperatures per probe so channel mapping is unambiguous.
+- return-to-dock behavior.
 
 ### Battery reporting
 
-Validate:
+Confirmed on physical hardware:
 
-- base battery;
-- each probe battery if exposed;
-- charging/docked behavior;
+- base battery is exposed in Home Assistant;
+- battery values for all four probes are exposed;
+- first observed values were 99% for the base and 100% for each probe.
+
+Still validate:
+
+- charging behavior over time;
+- changing battery values;
 - invalid/unknown battery values.
 
 ### Wi-Fi/app/Watch coexistence

@@ -7,6 +7,7 @@ The project is currently in pre-release development.
 ## 0.1.0-dev.2
 
 - Added Home Assistant Bluetooth discovery for ISC-027BW and INT-14-BW.
+- Validated the first physical INT-14-BW session through the Olimex ESPHome Bluetooth proxy, including battery values, all four dock states and probe 1 core/ambient temperature reporting.
 - Added persistent model-specific BLE coordinators with reconnect handling.
 - Added Bluetooth reconnect-loop tests for missing devices, session failures, disconnect cleanup and cancellation.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.

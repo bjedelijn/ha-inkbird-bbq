@@ -108,18 +108,30 @@ Documented protocol family:
 
 The public research includes a reference implementation and test vectors for the challenge/response algorithm. We should port the protocol behavior into our own driver and retain required MIT attribution for any source code that is substantially reused.
 
+### Physical hardware observations
+
+The first physical unit advertises as `INT-14-BW_WH`. Through the Olimex ESPHome Bluetooth proxy the advertisement is connectable and advertises vendor service FF00. Manufacturer data and service data are empty in the observed advertisement.
+
+The current driver successfully establishes a live session and exposes:
+
+- base battery;
+- battery values for probes 1-4;
+- dock state for probes 1-4;
+- core and ambient temperature after a probe is removed from the dock.
+
+During the first live test, all four dock states matched the physical charging station. Removing probe 1 changed the dock state and produced 23.0 °C for both core and ambient at room temperature, while docked probes remained unavailable.
+
 ### Validation required
 
-On our physical INT-14-BW we will verify:
+Continue to verify:
 
-- advertised name/address and discovery behavior;
-- four-probe telemetry layout for our firmware;
-- core and ambient temperature offsets;
-- dock/charging state;
-- base and probe battery reporting;
-- authentication test vectors and live handshake;
+- probes 2-4 and channel ordering;
+- unequal core/ambient temperatures;
+- authentication handshake details in debug capture;
 - reconnect/backoff behavior through the Olimex ESPHome Bluetooth proxy;
-- single-central limitation when the INKBIRD phone app is connected.
+- Home Assistant restart recovery;
+- single-central limitation when the INKBIRD phone app is connected;
+- Wi-Fi/app/Apple Watch coexistence.
 
 ## TNT-11-B
 
