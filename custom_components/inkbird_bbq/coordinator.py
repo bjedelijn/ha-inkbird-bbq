@@ -33,10 +33,6 @@ from .devices.int14bw import (
     parse_target_report,
     parse_temperature_unit,
 )
-from .devices.tnt11b import (
-    CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
-    decode_notification as decode_tnt_notification,
-)
 from .devices.isc027bw import (
     CHAR_FAN,
     CHAR_TARGETS,
@@ -45,6 +41,10 @@ from .devices.isc027bw import (
     build_target_control_frame,
     decode_targets,
     decode_telemetry,
+)
+from .devices.tnt11b import (
+    CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
+    decode_notification as decode_tnt_notification,
 )
 
 _LOGGER = logging.getLogger(__name__)

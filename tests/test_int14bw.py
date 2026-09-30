@@ -7,20 +7,16 @@ import struct
 import pytest
 
 from custom_components.inkbird_bbq.devices.int14bw import (
-    build_brightness_write,
     build_challenge_request,
     build_clock_sync,
-    build_temperature_unit_write,
     build_verify_response,
     crc8_cdma2000,
     crc8_dvb_s2,
     decode_temperatures,
     is_supported_name,
     parse_battery,
-    parse_brightness,
     parse_ff02_frames,
     parse_target_report,
-    parse_temperature_unit,
 )
 
 
@@ -118,6 +114,3 @@ def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
 
     assert parse_target_report(bytes.fromhex("03 10 e4 02 00 00 05 00")) is None
     assert parse_target_report(bytes.fromhex("02 10 e4")) is None
-
-
-
