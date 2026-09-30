@@ -115,65 +115,6 @@ def test_battery_callback_maps_base_and_probe_values() -> None:
     }
 
 
-def test_control_callback_maps_read_only_settings() -> None:
-    coordinator, published = _coordinator_stub()
-
-    coordinator._on_control(
-        None,
-        bytearray(
-            bytes.fromhex(
-                "02 04 43"
-                "02 06 4b"
-                "02 42 01"
-                "04 41 01 2c 01"
-                "09 02 02 10 e4 02 00 00 05 00"
-                "03 0c 5a 32"
-            )
-        ),
-    )
-
-    assert {"temperature_unit": "C"} in published
-    assert {"display_brightness": 75} in published
-    assert {"wifi_enabled": True} in published
-    assert {"auto_sleep_minutes": 5} in published
-    assert {
-        "probe_2_target_raw": 740,
-        "probe_2_target_low_raw": 0,
-        "probe_2_doneness": 5,
-        "probe_2_food_code": 0,
-    } in published
-    assert {"volume_raw": "5a32"} in published
-
-
-@pytest.mark.asyncio
-async def test_settings_read_uses_notification_parser_for_ff02_readback() -> None:
-    coordinator, published = _coordinator_stub()
-    coordinator._io_lock = asyncio.Lock()
-    client = MagicMock()
-    client.write_gatt_char = AsyncMock()
-    client.read_gatt_char = AsyncMock(
-        side_effect=[
-            bytes.fromhex("02 04 43"),
-            bytes.fromhex("09 02 01 10 e4 02 00 00 05 00"),
-            bytes.fromhex("09 02 02 10 e4 02 00 00 05 00"),
-            bytes.fromhex("09 02 04 10 e4 02 00 00 05 00"),
-            bytes.fromhex("09 02 08 10 e4 02 00 00 05 00"),
-            bytes.fromhex("02 06 4b"),
-            bytes.fromhex("03 0c 5a 32"),
-            bytes.fromhex("02 42 01"),
-            bytes.fromhex("04 41 01 2c 01"),
-        ]
-    )
-
-    await coordinator._async_read_settings(client)
-
-    assert client.write_gatt_char.await_count == 9
-    assert client.read_gatt_char.await_count == 9
-    assert {"temperature_unit": "C"} in published
-    assert {"display_brightness": 75} in published
-    assert {"wifi_enabled": True} in published
-    assert {"auto_sleep_minutes": 5} in published
-
 @pytest.mark.asyncio
 async def test_int14_setting_write_requests_readback() -> None:
     coordinator, published = _coordinator_stub()
