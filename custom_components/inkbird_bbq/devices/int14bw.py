@@ -113,17 +113,21 @@ def build_verify_response(
     return bytes((0x08, 0xFC, *body))
 
 
-def build_settings_read_request() -> bytes:
-    """Build the safe read-only FF02 settings request used after authentication."""
-    frames = [
+def build_settings_read_requests() -> tuple[bytes, ...]:
+    """Build safe, individual FF02 setting reads used after authentication.
+
+    Keep each request as a separate GATT write. This avoids depending on a
+    negotiated MTU large enough for a combined init blob and makes ESPHome
+    Bluetooth proxy behavior more predictable.
+    """
+    return (
         bytes.fromhex("01 04"),  # temperature unit
         *(bytes((0x02, 0x02, 1 << index)) for index in range(NUM_PROBES)),
         bytes.fromhex("01 06"),  # display brightness
         bytes.fromhex("01 0c"),  # volume/mute (captured, not interpreted yet)
         bytes.fromhex("01 42"),  # Wi-Fi enabled
         bytes.fromhex("01 41"),  # auto-sleep
-    ]
-    return b"".join(frames)
+    )
 
 
 def build_clock_sync(*, timestamp_ms: int | None = None) -> bytes:

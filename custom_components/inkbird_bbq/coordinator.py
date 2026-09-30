@@ -22,7 +22,7 @@ from .devices.int14bw import (
     CHAR_TEMPERATURE,
     build_challenge_request,
     build_clock_sync,
-    build_settings_read_request,
+    build_settings_read_requests,
     build_verify_response,
     decode_temperatures,
     parse_auto_sleep_minutes,
@@ -245,12 +245,15 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             build_clock_sync(),
             response=False,
         )
-        await client.write_gatt_char(
-            CHAR_CONTROL,
-            build_settings_read_request(),
-            response=False,
-        )
         await asyncio.sleep(0.2)
+        for request in build_settings_read_requests():
+            _LOGGER.debug("INT-14-BW settings read request: %s", request.hex())
+            await client.write_gatt_char(
+                CHAR_CONTROL,
+                request,
+                response=False,
+            )
+            await asyncio.sleep(0.15)
         await client.write_gatt_char(
             CHAR_CONTROL,
             _INT14_CURRENT_INFO_REQUEST,

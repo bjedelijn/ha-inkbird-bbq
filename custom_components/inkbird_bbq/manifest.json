@@ -23,6 +23,10 @@
     },
     {
       "local_name": "INT-14-BW_WH"
+    },
+    {
+      "local_name": "S27",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     }
   ]
 }

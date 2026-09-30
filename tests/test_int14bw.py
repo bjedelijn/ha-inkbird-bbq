@@ -9,7 +9,7 @@ import pytest
 from custom_components.inkbird_bbq.devices.int14bw import (
     build_challenge_request,
     build_clock_sync,
-    build_settings_read_request,
+    build_settings_read_requests,
     build_verify_response,
     crc8_cdma2000,
     crc8_dvb_s2,
@@ -108,14 +108,20 @@ def test_battery_parser() -> None:
     assert parse_battery(bytes((95, 0x7F, 101, 42))) == (95, None, 100, 42)
 
 
-def test_settings_read_request_contains_safe_read_frames() -> None:
-    request = build_settings_read_request()
-    assert request.startswith(bytes.fromhex("01 04"))
-    assert bytes.fromhex("02 02 01") in request
-    assert bytes.fromhex("02 02 02") in request
-    assert bytes.fromhex("02 02 04") in request
-    assert bytes.fromhex("02 02 08") in request
-    assert request.endswith(bytes.fromhex("01 41"))
+def test_settings_read_requests_are_individual_safe_frames() -> None:
+    requests = build_settings_read_requests()
+    assert requests == (
+        bytes.fromhex("01 04"),
+        bytes.fromhex("02 02 01"),
+        bytes.fromhex("02 02 02"),
+        bytes.fromhex("02 02 04"),
+        bytes.fromhex("02 02 08"),
+        bytes.fromhex("01 06"),
+        bytes.fromhex("01 0c"),
+        bytes.fromhex("01 42"),
+        bytes.fromhex("01 41"),
+    )
+    assert all(len(request) <= 20 for request in requests)
 
 
 def test_settings_parsers() -> None:

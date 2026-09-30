@@ -7,6 +7,7 @@ The project is currently in pre-release development.
 ## 0.1.0-dev.2
 
 - Added Home Assistant Bluetooth discovery for ISC-027BW and INT-14-BW.
+- Added the physically confirmed ISC-027BW advertisement name `S27` with vendor service FFF0.
 - Validated the first physical INT-14-BW session through the Olimex ESPHome Bluetooth proxy, including battery values, all four dock states and probe 1 core/ambient temperature reporting.
 - Confirmed probe 1 return-to-dock behavior and probe 2 channel mapping with distinct 27.0 °C core / 24.0 °C ambient values.
 - Confirmed probe 3 and probe 4 dock/undock mapping and temperature reporting on physical hardware.
@@ -20,6 +21,7 @@ The project is currently in pre-release development.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.
 - Added safe read-only INT-14-BW settings queries for temperature unit, display brightness, Wi-Fi state and auto-sleep.
+- Changed INT-14-BW settings reads to individual FF02 GATT writes after the first physical test showed the entities but no returned values with a combined request.
 - Added raw target-temperature report capture for probes 1-4 without enabling target writes or assuming unresolved C/F scaling.
 - Added read-only INT-14-BW core/ambient temperature, battery and dock-state entities.
 - Added privacy-safe Home Assistant diagnostics and diagnostics privacy tests for Bluetooth-address redaction.

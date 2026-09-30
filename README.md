@@ -59,13 +59,13 @@ The README should be kept up to date with every meaningful change that affects s
 The development branch already contains:
 
 - a shared Home Assistant Bluetooth connection layer designed for local adapters and ESPHome Bluetooth proxies;
-- automatic Bluetooth discovery for ISC-027BW and INT-14-BW using confirmed BLE names, including the physically observed `INT-14-BW_WH` advertisement;
+- automatic Bluetooth discovery for ISC-027BW and INT-14-BW using confirmed BLE names, including the physically observed `S27` and `INT-14-BW_WH` advertisements;
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
 - INT-14-BW challenge/response authentication, clock sync, current-state requests and safe read-only settings queries;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
-- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; target-temperature reports are captured in diagnostics but remain raw until their C/F scaling is confirmed on the physical device;
+- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; setting reads are sent as individual FF02 GATT writes for Bluetooth-proxy/MTU compatibility; target-temperature reports are captured in diagnostics but remain raw until their C/F scaling is confirmed on the physical device;
 - protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
 - Bluetooth reconnect-loop tests cover missing devices, session failures, disconnect cleanup and cancellation;
 - English base strings plus an initial Dutch Home Assistant translation;
@@ -74,6 +74,8 @@ The development branch already contains:
 TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
 The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation now confirms base/probe battery reporting, all four probe channel mappings, dock/undock behavior, separate core/ambient values, and automatic reconnect after the INT-14-BW base station is powered off and back on through the Olimex ESPHome Bluetooth proxy. Proxy/HA restart recovery and app/Wi-Fi coexistence still need validation before the model is marked hardware validated.
+
+The first physical ISC-027BW has now been detected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. Read-only GATT telemetry still needs live validation before enabling any control writes.
 
 Physical hardware validation is still required before enabling ISC-027BW control writes.
 

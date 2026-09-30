@@ -49,12 +49,16 @@ Validate:
 
 ### Discovery
 
-Confirm:
+Confirmed on physical hardware through the Olimex ESPHome Bluetooth proxy:
 
-- advertised local name;
-- Bluetooth address format;
-- advertised service UUIDs;
-- FFF0 service exists;
+- advertised local name is `S27`;
+- advertisement is connectable;
+- vendor service UUID FFF0 is advertised;
+- manufacturer data is present.
+
+Continue to verify after connecting:
+
+- FFF0 service exists in GATT;
 - FFF1, FFF2 and FFF3 characteristic properties match expectations.
 
 ### Read-only telemetry
@@ -179,7 +183,7 @@ Still validate:
 
 ### Read-only settings
 
-The integration now requests the following settings over FF02 after authentication:
+The integration now requests the following settings over FF02 after authentication. Each request is sent as a separate GATT write to avoid depending on a large negotiated BLE MTU through a Bluetooth proxy:
 
 - temperature unit;
 - target report for probes 1-4;
@@ -188,7 +192,7 @@ The integration now requests the following settings over FF02 after authenticati
 - Wi-Fi enabled state;
 - auto-sleep.
 
-Validate the visible read-only entities against the physical display/app:
+The first combined-read implementation created the entities but left these values unknown on the physical unit. The read path has therefore been changed to individual FF02 requests. Re-test the visible read-only entities against the physical display/app:
 
 - temperature unit;
 - display brightness;

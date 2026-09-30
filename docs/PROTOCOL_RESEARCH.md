@@ -70,11 +70,14 @@ Documented frame properties:
 
 Two public projects also document the ISC-027BW over its Wi-Fi/Tuya path. These are useful as a cross-check for device capabilities, alarms, targets and fan behavior, but the initial integration will use Bluetooth through Home Assistant's Bluetooth stack.
 
+### Physical hardware observation
+
+The first physical ISC-027BW advertises as `S27` through the Olimex ESPHome Bluetooth proxy. The advertisement is connectable and includes vendor service UUID FFF0 plus manufacturer data. Automatic discovery therefore accepts the physically confirmed `S27` name.
+
 ### Validation required
 
 Before enabling writes we will verify on our physical unit:
 
-- advertised name and service UUIDs;
 - exact FFF1/FFF2/FFF3 lengths and properties;
 - CRC byte order;
 - temperature conversion and invalid/sentinel values;
@@ -119,6 +122,8 @@ The current driver successfully establishes a live session and exposes:
 - dock state for probes 1-4;
 - core and ambient temperature after a probe is removed from the dock;
 - safe read-only FF02 settings queries for temperature unit, brightness, Wi-Fi mode and auto-sleep.
+
+The first live settings test produced Home Assistant entities but no values. The initial implementation sent the read frames as one combined FF02 write. The implementation now sends each read request separately with a short delay to avoid depending on a large negotiated GATT write size/MTU through the ESPHome proxy. This still requires physical confirmation.
 
 The driver also requests target-temperature reports for all four probes. Their structural fields are decoded and retained as raw values for diagnostics, but the target is not yet exposed as a Home Assistant temperature entity because the public research leaves the C/F target scaling boundary unresolved. No settings writes are enabled.
 
