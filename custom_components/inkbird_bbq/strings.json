@@ -87,14 +87,8 @@
       "probe_4_battery": {
         "name": "Probe 4 battery"
       },
-      "temperature_unit": {
-        "name": "Temperature unit"
-      },
-      "display_brightness": {
-        "name": "Display brightness"
-      },
-      "auto_sleep_minutes": {
-        "name": "Auto sleep"
+      "probe_temperature": {
+        "name": "Probe temperature"
       }
     },
     "binary_sensor": {
@@ -121,9 +115,6 @@
       "display_brightness_control": {
         "name": "Set display brightness (experimental)"
       },
-      "auto_sleep_control": {
-        "name": "Set auto sleep (experimental)"
-      },
       "pit_target_control": {
         "name": "Set pit target (experimental)"
       },
@@ -145,9 +136,6 @@
     "switch": {
       "fan_control": {
         "name": "Fan control (experimental)"
-      },
-      "wifi_control": {
-        "name": "Wi-Fi control (experimental)"
       }
     }
   }
