@@ -21,7 +21,7 @@ async def async_setup_entry(
     entry: InkbirdBbqConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the disabled-by-default temperature-unit test control."""
+    """Set up the temperature-unit control."""
     coordinator = entry.runtime_data
     if coordinator.model == MODEL_INT_14_BW:
         async_add_entities([InkbirdTemperatureUnitSelect(coordinator)])
@@ -37,7 +37,7 @@ class InkbirdTemperatureUnitSelect(
     _attr_translation_key = "temperature_unit_control"
     _attr_options = ["Celsius", "Fahrenheit"]
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator: InkbirdBbqCoordinator) -> None:
         super().__init__(coordinator)
