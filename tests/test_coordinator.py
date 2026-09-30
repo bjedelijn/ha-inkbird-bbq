@@ -110,3 +110,33 @@ def test_battery_callback_maps_base_and_probe_values() -> None:
         "probe_3_battery": None,
         "probe_4_battery": 94,
     }
+
+
+def test_control_callback_maps_read_only_settings() -> None:
+    coordinator, published = _coordinator_stub()
+
+    coordinator._on_control(
+        None,
+        bytearray(
+            bytes.fromhex(
+                "02 04 43"
+                "02 06 4b"
+                "02 42 01"
+                "04 41 01 2c 01"
+                "09 02 02 10 e4 02 00 00 05 00"
+                "03 0c 5a 32"
+            )
+        ),
+    )
+
+    assert {"temperature_unit": "C"} in published
+    assert {"display_brightness": 75} in published
+    assert {"wifi_enabled": True} in published
+    assert {"auto_sleep_minutes": 5} in published
+    assert {
+        "probe_2_target_raw": 740,
+        "probe_2_target_low_raw": 0,
+        "probe_2_doneness": 5,
+        "probe_2_food_code": 0,
+    } in published
+    assert {"volume_raw": "5a32"} in published

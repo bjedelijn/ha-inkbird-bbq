@@ -117,7 +117,10 @@ The current driver successfully establishes a live session and exposes:
 - base battery;
 - battery values for probes 1-4;
 - dock state for probes 1-4;
-- core and ambient temperature after a probe is removed from the dock.
+- core and ambient temperature after a probe is removed from the dock;
+- safe read-only FF02 settings queries for temperature unit, brightness, Wi-Fi mode and auto-sleep.
+
+The driver also requests target-temperature reports for all four probes. Their structural fields are decoded and retained as raw values for diagnostics, but the target is not yet exposed as a Home Assistant temperature entity because the public research leaves the C/F target scaling boundary unresolved. No settings writes are enabled.
 
 During the first live test, all four dock states matched the physical charging station. Removing probe 1 changed the dock state and produced 23.0 °C for both core and ambient at room temperature, while docked probes remained unavailable.
 

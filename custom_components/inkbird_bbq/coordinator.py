@@ -22,10 +22,16 @@ from .devices.int14bw import (
     CHAR_TEMPERATURE,
     build_challenge_request,
     build_clock_sync,
+    build_settings_read_request,
     build_verify_response,
     decode_temperatures,
+    parse_auto_sleep_minutes,
     parse_battery,
+    parse_brightness,
     parse_ff02_frames,
+    parse_target_report,
+    parse_temperature_unit,
+    parse_wifi_enabled,
 )
 from .devices.isc027bw import (
     CHAR_FAN,
@@ -241,6 +247,12 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         )
         await client.write_gatt_char(
             CHAR_CONTROL,
+            build_settings_read_request(),
+            response=False,
+        )
+        await asyncio.sleep(0.2)
+        await client.write_gatt_char(
+            CHAR_CONTROL,
             _INT14_CURRENT_INFO_REQUEST,
             response=False,
         )
@@ -276,6 +288,50 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                 self._challenge_event.set()
             elif frame_type == 0xFC and payload and payload[0] == 0x00:
                 self._auth_event.set()
+            elif frame_type == 0x04:
+                unit = parse_temperature_unit(payload)
+                if unit is not None:
+                    self._publish(temperature_unit=unit)
+            elif frame_type == 0x06:
+                brightness = parse_brightness(payload)
+                if brightness is not None:
+                    self._publish(display_brightness=brightness)
+            elif frame_type == 0x42:
+                wifi_enabled = parse_wifi_enabled(payload)
+                if wifi_enabled is not None:
+                    self._publish(wifi_enabled=wifi_enabled)
+            elif frame_type == 0x41:
+                auto_sleep = parse_auto_sleep_minutes(payload)
+                if auto_sleep is not None:
+                    self._publish(auto_sleep_minutes=auto_sleep)
+            elif frame_type == 0x02:
+                target = parse_target_report(payload)
+                if target is not None:
+                    self._publish(
+                        **{
+                            f"probe_{target.probe}_target_raw": target.high_raw,
+                            f"probe_{target.probe}_target_low_raw": target.low_raw,
+                            f"probe_{target.probe}_doneness": target.doneness,
+                            f"probe_{target.probe}_food_code": target.food_code,
+                        }
+                    )
+                    _LOGGER.debug(
+                        "INT-14-BW target report probe=%d high_raw=%d "
+                        "low_raw=%d doneness=%d food=%d",
+                        target.probe,
+                        target.high_raw,
+                        target.low_raw,
+                        target.doneness,
+                        target.food_code,
+                    )
+            elif frame_type == 0x0C:
+                self._publish(volume_raw=payload.hex())
+            else:
+                _LOGGER.debug(
+                    "INT-14-BW unhandled FF02 frame type=0x%02x payload=%s",
+                    frame_type,
+                    payload.hex(),
+                )
 
     def _on_temperature(
         self,

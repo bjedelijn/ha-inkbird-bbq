@@ -11,7 +11,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.core import callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -39,13 +39,23 @@ ISC027BW_BINARY_SENSORS = (
 )
 
 INT14BW_BINARY_SENSORS = tuple(
-    InkbirdBinarySensorDescription(
-        key=f"probe_{probe}_docked",
-        translation_key=f"probe_{probe}_docked",
-        data_key=f"probe_{probe}_docked",
-        device_class=BinarySensorDeviceClass.PLUG,
-    )
-    for probe in range(1, 5)
+    [
+        InkbirdBinarySensorDescription(
+            key=f"probe_{probe}_docked",
+            translation_key=f"probe_{probe}_docked",
+            data_key=f"probe_{probe}_docked",
+            device_class=BinarySensorDeviceClass.PLUG,
+        )
+        for probe in range(1, 5)
+    ]
+    + [
+        InkbirdBinarySensorDescription(
+            key="wifi_enabled",
+            translation_key="wifi_enabled",
+            data_key="wifi_enabled",
+            entity_category=EntityCategory.CONFIG,
+        )
+    ]
 )
 
 

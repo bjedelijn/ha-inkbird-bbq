@@ -16,4 +16,5 @@ def test_int14bw_exposes_four_dock_states() -> None:
         "probe_2_docked",
         "probe_3_docked",
         "probe_4_docked",
+        "wifi_enabled",
     ]

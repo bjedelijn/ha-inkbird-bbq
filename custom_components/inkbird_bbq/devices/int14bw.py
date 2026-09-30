@@ -13,6 +13,8 @@ from dataclasses import dataclass
 
 MODEL = "INT-14-BW"
 LOCAL_NAME = "INT-14-BW"
+LOCAL_NAME_WH = "INT-14-BW_WH"
+SUPPORTED_LOCAL_NAMES = {LOCAL_NAME, LOCAL_NAME_WH}
 
 SERVICE_UUID = "0000ff00-0000-1000-8000-00805f9b34fb"
 CHAR_TEMPERATURE = "0000ff01-0000-1000-8000-00805f9b34fb"
@@ -35,9 +37,20 @@ class Int14bwTemperatures:
     ambient: tuple[float | None, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class Int14bwTargetReport:
+    """Decoded target-temperature report from FF02 type 0x02."""
+
+    probe: int
+    high_raw: int
+    low_raw: int
+    doneness: int
+    food_code: int
+
+
 def is_supported_name(name: str | None) -> bool:
     """Return whether a BLE local name is the exact supported model."""
-    return name == LOCAL_NAME
+    return name in SUPPORTED_LOCAL_NAMES
 
 
 def _crc8(data: bytes, poly: int, init: int) -> int:
@@ -98,6 +111,19 @@ def build_verify_response(
     body.append(crc8_dvb_s2(body + bytes((inner_crc, challenge_crc))))
 
     return bytes((0x08, 0xFC, *body))
+
+
+def build_settings_read_request() -> bytes:
+    """Build the safe read-only FF02 settings request used after authentication."""
+    frames = [
+        bytes.fromhex("01 04"),  # temperature unit
+        *(bytes((0x02, 0x02, 1 << index)) for index in range(NUM_PROBES)),
+        bytes.fromhex("01 06"),  # display brightness
+        bytes.fromhex("01 0c"),  # volume/mute (captured, not interpreted yet)
+        bytes.fromhex("01 42"),  # Wi-Fi enabled
+        bytes.fromhex("01 41"),  # auto-sleep
+    ]
+    return b"".join(frames)
 
 
 def build_clock_sync(*, timestamp_ms: int | None = None) -> bytes:
@@ -167,3 +193,66 @@ def parse_ff02_frames(data: bytes) -> tuple[tuple[int, bytes], ...]:
 def parse_battery(data: bytes) -> tuple[int | None, ...]:
     """Parse battery percentages, treating 0x7f as absent/invalid."""
     return tuple(None if value == 0x7F else min(value, 100) for value in data)
+
+
+def parse_temperature_unit(payload: bytes) -> str | None:
+    """Parse FF02 type 0x04 temperature-unit payload."""
+    if not payload:
+        return None
+    if payload[0] == 0x43:
+        return "C"
+    if payload[0] == 0x46:
+        return "F"
+    return None
+
+
+def parse_brightness(payload: bytes) -> int | None:
+    """Parse FF02 type 0x06 display brightness."""
+    if not payload:
+        return None
+    return min(payload[0], 100)
+
+
+def parse_wifi_enabled(payload: bytes) -> bool | None:
+    """Parse FF02 type 0x42 Wi-Fi switch state."""
+    if not payload:
+        return None
+    return bool(payload[0])
+
+
+def parse_auto_sleep_minutes(payload: bytes) -> int | None:
+    """Parse FF02 type 0x41 auto-sleep state into minutes.
+
+    Expected report layout mirrors the command: enabled byte + LE16 seconds.
+    Disabled auto-sleep is represented as 0 minutes.
+    """
+    if len(payload) < 3:
+        return None
+    if payload[0] == 0:
+        return 0
+    seconds = int.from_bytes(payload[1:3], "little")
+    return round(seconds / 60)
+
+
+def parse_target_report(payload: bytes) -> Int14bwTargetReport | None:
+    """Parse the known structural fields of an FF02 type 0x02 target report.
+
+    The target scaling is deliberately left raw until confirmed on physical
+    hardware. Public reverse engineering leaves the C/F scaling boundary
+    unresolved for target-temperature writes.
+    """
+    if len(payload) < 8:
+        return None
+
+    mask = payload[0]
+    if mask not in (0x01, 0x02, 0x04, 0x08):
+        return None
+
+    probe = mask.bit_length()
+    return Int14bwTargetReport(
+        probe=probe,
+        high_raw=int.from_bytes(payload[2:4], "little"),
+        low_raw=int.from_bytes(payload[4:6], "little"),
+        doneness=payload[6],
+        food_code=payload[7],
+    )

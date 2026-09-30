@@ -19,6 +19,8 @@ The project is currently in pre-release development.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.
+- Added safe read-only INT-14-BW settings queries for temperature unit, display brightness, Wi-Fi state and auto-sleep.
+- Added raw target-temperature report capture for probes 1-4 without enabling target writes or assuming unresolved C/F scaling.
 - Added read-only INT-14-BW core/ambient temperature, battery and dock-state entities.
 - Added privacy-safe Home Assistant diagnostics and diagnostics privacy tests for Bluetooth-address redaction.
 - Added English base strings and initial Dutch translations.

@@ -177,6 +177,28 @@ Still validate:
 - deliberately different temperatures on probes 3 and 4 if a final cross-channel stress check is desired;
 - unavailable/sentinel values beyond normal docking behavior.
 
+### Read-only settings
+
+The integration now requests the following settings over FF02 after authentication:
+
+- temperature unit;
+- target report for probes 1-4;
+- display brightness;
+- volume/mute raw report;
+- Wi-Fi enabled state;
+- auto-sleep.
+
+Validate the visible read-only entities against the physical display/app:
+
+- temperature unit;
+- display brightness;
+- Wi-Fi enabled;
+- auto-sleep minutes.
+
+For target temperature, compare the captured raw value in diagnostics/debug logging with the app/display before exposing it as a temperature entity. The public protocol research still leaves the C/F scaling boundary unresolved for target writes.
+
+No settings writes are enabled yet.
+
 ### Battery reporting
 
 Confirmed on physical hardware:

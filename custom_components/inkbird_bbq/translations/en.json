@@ -86,6 +86,15 @@
       },
       "probe_4_battery": {
         "name": "Probe 4 battery"
+      },
+      "temperature_unit": {
+        "name": "Temperature unit"
+      },
+      "display_brightness": {
+        "name": "Display brightness"
+      },
+      "auto_sleep_minutes": {
+        "name": "Auto sleep"
       }
     },
     "binary_sensor": {
@@ -103,6 +112,9 @@
       },
       "probe_4_docked": {
         "name": "Probe 4 docked"
+      },
+      "wifi_enabled": {
+        "name": "Wi-Fi enabled"
       }
     }
   }

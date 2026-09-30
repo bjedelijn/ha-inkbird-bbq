@@ -63,8 +63,9 @@ The development branch already contains:
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
-- INT-14-BW challenge/response authentication, clock sync and current-state requests;
+- INT-14-BW challenge/response authentication, clock sync, current-state requests and safe read-only settings queries;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
+- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; target-temperature reports are captured in diagnostics but remain raw until their C/F scaling is confirmed on the physical device;
 - protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
 - Bluetooth reconnect-loop tests cover missing devices, session failures, disconnect cleanup and cancellation;
 - English base strings plus an initial Dutch Home Assistant translation;
