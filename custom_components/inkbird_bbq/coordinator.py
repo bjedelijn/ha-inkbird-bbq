@@ -24,6 +24,7 @@ from .devices.int14bw import (
     build_challenge_request,
     build_clock_sync,
     build_temperature_unit_write,
+    build_target_temperature_write,
     build_verify_response,
     decode_temperatures,
     parse_battery,
@@ -262,6 +263,7 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         self._challenge_event = asyncio.Event()
         self._auth_event = asyncio.Event()
         self._docked = [False] * 4
+        self._target_reports: dict[int, Any] = {}
 
     async def _session(self, client: BleakClient) -> None:
         self._client = client
@@ -364,6 +366,74 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                     )
                     self._on_control(None, bytearray(raw))
 
+    async def async_set_probe_target(
+        self,
+        probe: int,
+        target_celsius: float,
+    ) -> None:
+        """Set one probe target and verify it with an FF02 report."""
+        client = self._require_client()
+        if probe not in range(1, 5):
+            raise ValueError("Probe must be between 1 and 4")
+
+        async with self._io_lock:
+            current = self._target_reports.get(probe)
+            if current is None:
+                await client.write_gatt_char(
+                    CHAR_CONTROL,
+                    bytes((0x02, 0x02, 1 << (probe - 1))),
+                    response=False,
+                )
+                await asyncio.sleep(0.25)
+                raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+                self._on_control(None, bytearray(raw))
+                current = self._target_reports.get(probe)
+
+            if current is None:
+                raise RuntimeError(
+                    f"No target report received for INT-14-BW probe {probe}"
+                )
+
+            frame = build_target_temperature_write(
+                probe,
+                target_celsius,
+                low_raw=current.low_raw,
+                doneness=current.doneness,
+                food_code=current.food_code,
+            )
+            _LOGGER.debug(
+                "INT-14-BW probe %d target write: %s",
+                probe,
+                frame.hex(),
+            )
+            await client.write_gatt_char(
+                CHAR_CONTROL,
+                frame,
+                response=False,
+            )
+            await asyncio.sleep(0.25)
+            await client.write_gatt_char(
+                CHAR_CONTROL,
+                bytes((0x02, 0x02, 1 << (probe - 1))),
+                response=False,
+            )
+            await asyncio.sleep(0.25)
+            raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+            self._on_control(None, bytearray(raw))
+
+            updated = self._target_reports.get(probe)
+            if updated is None:
+                raise RuntimeError(
+                    f"No target readback received for INT-14-BW probe {probe}"
+                )
+
+            expected = round(target_celsius * 10)
+            if updated.high_raw != expected:
+                raise RuntimeError(
+                    f"INT-14-BW probe {probe} target readback mismatch: "
+                    f"expected {expected}, got {updated.high_raw}"
+                )
+
     async def async_set_temperature_unit(self, unit: str) -> None:
         """Experimentally set C/F on the INT-14-BW."""
         await self._async_write_setting(
@@ -407,8 +477,12 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             elif frame_type == 0x02:
                 target = parse_target_report(payload)
                 if target is not None:
+                    self._target_reports[target.probe] = target
                     self._publish(
                         **{
+                            f"probe_{target.probe}_target": round(
+                                target.high_raw / 10.0, 1
+                            ),
                             f"probe_{target.probe}_target_raw": target.high_raw,
                             f"probe_{target.probe}_target_low_raw": target.low_raw,
                             f"probe_{target.probe}_doneness": target.doneness,
