@@ -569,7 +569,15 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
 
 
 class Tnt11bCoordinator(InkbirdBbqCoordinator):
-    """Bluetooth coordinator for the BG-BT1W / TNT-11-B."""
+    """Experimental Bluetooth coordinator for the BG-BT1W / TNT-11-B."""
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, address: str) -> None:
+        super().__init__(
+            hass,
+            entry,
+            model=MODEL_TNT_11_B,
+            address=address,
+        )
 
     async def _session(self, client: BleakClient) -> None:
         self._client = client
@@ -619,6 +627,4 @@ def create_coordinator(
         return Isc027bwCoordinator(hass, entry, address)
     if model == MODEL_INT_14_BW:
         return Int14bwCoordinator(hass, entry, address)
-    if model == MODEL_TNT_11_B:
-        return Tnt11bCoordinator(hass, entry, address)
     raise ValueError(f"Unsupported INKBIRD BBQ model: {model}")

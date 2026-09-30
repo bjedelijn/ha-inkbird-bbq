@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers.device_registry import format_mac
 
-from .const import AUTO_DISCOVERY_NAMES, CONF_MODEL, DOMAIN
+from .const import AUTO_DISCOVERY_NAMES, CONF_MODEL, DOMAIN, SUPPORTED_MODELS
 
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -19,7 +19,8 @@ def _model_from_name(name: str | None) -> str | None:
     """Return the supported model for an exact BLE local name."""
     if name is None:
         return None
-    return AUTO_DISCOVERY_NAMES.get(name)
+    model = AUTO_DISCOVERY_NAMES.get(name)
+    return model if model in SUPPORTED_MODELS else None
 
 
 class InkbirdBbqConfigFlow(ConfigFlow, domain=DOMAIN):
