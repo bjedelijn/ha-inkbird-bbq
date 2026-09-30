@@ -28,9 +28,9 @@ def test_experimental_controls_are_disabled_by_default() -> None:
     )
     assert (
         object.__new__(InkbirdTemperatureUnitSelect).entity_registry_enabled_default
-        is False
+        is True
     )
     assert (
         object.__new__(InkbirdExperimentalSwitch).entity_registry_enabled_default
-        is False
+        is True
     )
