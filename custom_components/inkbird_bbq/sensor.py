@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -144,26 +144,6 @@ INT14BW_SENSORS: tuple[InkbirdSensorDescription, ...] = tuple(
         for probe in range(1, 5)
     ]
     + [
-        InkbirdSensorDescription(
-            key="temperature_unit",
-            translation_key="temperature_unit",
-            data_key="temperature_unit",
-            entity_category=EntityCategory.CONFIG,
-        ),
-        InkbirdSensorDescription(
-            key="display_brightness",
-            translation_key="display_brightness",
-            data_key="display_brightness",
-            native_unit_of_measurement=PERCENTAGE,
-            entity_category=EntityCategory.CONFIG,
-        ),
-        InkbirdSensorDescription(
-            key="auto_sleep_minutes",
-            translation_key="auto_sleep_minutes",
-            data_key="auto_sleep_minutes",
-            native_unit_of_measurement=UnitOfTime.MINUTES,
-            entity_category=EntityCategory.CONFIG,
-        ),
     ]
 )
 
