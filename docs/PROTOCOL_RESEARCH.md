@@ -1,0 +1,195 @@
+# Protocol research
+
+This document records public protocol research used while developing INKBIRD BBQ for Home Assistant. It intentionally separates observed/documented protocol facts from behavior that still needs validation on our own hardware.
+
+## Design decision
+
+The integration uses one Home Assistant domain with independent device protocol drivers. The supported devices do not share one wire protocol, even though they share the INKBIRD brand and BBQ use case.
+
+## Bluetooth transport and proxy
+
+The integration must use Home Assistant's Bluetooth APIs rather than connecting directly to BlueZ. This allows Home Assistant to select the best available Bluetooth path, including remote ESPHome Bluetooth proxies.
+
+The reference proxy for development and testing is:
+
+- **Olimex ESP32-POE-ISO-EA**
+- Ethernet + PoE
+- external 2.4 GHz antenna
+- ESPHome Bluetooth Proxy with active connections enabled
+- optional **BOX-ESP32-POE-ISO-EA-F** enclosure
+
+The integration must not assume that the Bluetooth controller is local to the Home Assistant host. Connection, reconnect and discovery behavior will therefore be tested through the Olimex proxy as the primary development path.
+
+The proxy is a transport component only. Device protocol logic remains in the model-specific drivers.
+
+## Coexistence test plan: BLE, Wi-Fi and vendor app
+
+A core goal is to preserve the vendor Wi-Fi/app experience while Home Assistant owns the local BLE session.
+
+Known constraints and observations:
+
+- BLE GATT devices in this family may accept only one active BLE client. For the INT-14-BW this is already documented by an existing Home Assistant integration: the phone app and Home Assistant cannot both own the BLE link at the same time.
+- The INT-14-BW supports Wi-Fi and Bluetooth and exposes a Wi-Fi + Bluetooth operating mode in community testing. INKBIRD also documents Apple Watch monitoring for this model.
+- The ISC-027BW officially supports both Wi-Fi and Bluetooth, but model-specific Apple Watch behavior is not yet confirmed.
+- The Home Assistant integration will not disable, reconfigure or take ownership of Wi-Fi unless a future feature explicitly requires it.
+
+Hardware validation matrix:
+
+| Device | HA via BLE | INKBIRD app via Wi-Fi at same time | Apple Watch via app | Status |
+| --- | --- | --- | --- | --- |
+| ISC-027BW | Planned | To validate | To validate | Pending hardware |
+| INT-14-BW | Confirmed | Confirmed with iPhone app over Wi-Fi | Officially advertised; coexistence to validate | Partial hardware validation |
+| TNT-11-B | To investigate | Not assumed | Not assumed | Pending hardware |
+
+Tests should include starting Home Assistant first, starting the app first, reconnecting Wi-Fi, moving the phone out of BLE range, and verifying that an app opened in the background does not steal the BLE session from Home Assistant when Wi-Fi monitoring is available.
+
+## ISC-027BW
+
+### Public BLE research
+
+Reference: [777Timo/inkbird-ble-ha](https://github.com/777Timo/inkbird-ble-ha) (MIT, Copyright 2026 Timo Prager).
+
+Documented characteristics:
+
+| Characteristic | Direction | Documented purpose |
+| --- | --- | --- |
+| FFF1 | Read/write | Fan state/control |
+| FFF2 | Read/notify | Four temperatures and actual fan output |
+| FFF3 | Read/write | Grill target and meat-probe alarm targets |
+
+Documented frame properties:
+
+- Frames are 20 bytes.
+- Temperature values are unsigned little-endian Fahrenheit x10.
+- CRC16-Modbus is calculated over bytes 0-17 and stored in bytes 18-19.
+- FFF2 bytes 0-7 contain four temperature values; byte 8 contains actual fan output in percent.
+- FFF1 byte 0 represents fan on/off. Public reverse engineering describes byte 6 as a fan speed field, but physical testing shows that fan output is automatically regulated by the controller; the integration does not expose a fan-power write.
+- FFF3 contains grill target temperature and probe alarm targets.
+
+### Independent Wi-Fi/Tuya research
+
+Two public projects also document the ISC-027BW over its Wi-Fi/Tuya path. These are useful as a cross-check for device capabilities, alarms, targets and fan behavior, but the initial integration will use Bluetooth through Home Assistant's Bluetooth stack.
+
+### Physical hardware observation
+
+The first physical ISC-027BW advertises as `S27` through the Olimex ESPHome Bluetooth proxy. The advertisement is connectable and includes vendor service UUID FFF0 plus manufacturer data. Automatic discovery therefore accepts the physically confirmed `S27` name. Physical testing confirms BLE fan on/off, automatic fan-output regulation, and automatic fan shutdown when the grill/pit probe is absent.
+
+### Validation required
+
+Before enabling writes we will verify on our physical unit:
+
+- exact FFF1/FFF2/FFF3 lengths and properties;
+- CRC byte order;
+- temperature conversion and invalid/sentinel values;
+- fan state and fan-output semantics; the physical ISC-027BW automatically regulates fan output and the tested BLE control exposes on/off rather than a user-settable power percentage;
+- target-temperature encoding;
+- probe alarm offsets;
+- reconnect behavior through an ESPHome Bluetooth proxy;
+- behavior after power loss, BLE loss and Home Assistant restart.
+
+Writes remain disabled until these checks pass.
+
+## INT-14-BW
+
+### Public protocol research
+
+Primary references:
+
+- [paul43210/inkbird-bw-ble](https://github.com/paul43210/inkbird-bw-ble) (MIT, Copyright 2026 Paul Faure)
+- [boris327/ha-inkbird-int14bw](https://github.com/boris327/ha-inkbird-int14bw) (MIT, Copyright 2026 Boris Pustilnik)
+
+Documented protocol family:
+
+- vendor service FF00;
+- FF01 carries temperature telemetry;
+- FF02 carries authentication, commands and state;
+- FF03 carries probe/dock state;
+- standard 2A19 is used for battery data;
+- a fresh challenge/response authentication is required for a persistent session;
+- FF02 frames use a length byte followed by a type and payload;
+- multi-byte values are generally little-endian.
+
+The public research includes a reference implementation and test vectors for the challenge/response algorithm. We should port the protocol behavior into our own driver and retain required MIT attribution for any source code that is substantially reused.
+
+### Physical hardware observations
+
+The first physical unit advertises as `INT-14-BW_WH`. Through the Olimex ESPHome Bluetooth proxy the advertisement is connectable and advertises vendor service FF00. Manufacturer data and service data are empty in the observed advertisement.
+
+The current driver successfully establishes a live session and exposes:
+
+- base battery;
+- battery values for probes 1-4;
+- dock state for probes 1-4;
+- core and ambient temperature after a probe is removed from the dock;
+- safe read-only FF02 settings queries for temperature unit, brightness, Wi-Fi mode and auto-sleep.
+
+The first live settings test produced Home Assistant entities but no values. A second test with individual FF02 requests still left the settings unavailable. The driver now also performs an FF02 characteristic readback after each request, retries missing settings every 30 seconds and logs raw FF02 RX/readback frames at debug level. This still requires physical confirmation.
+
+The driver also requests target-temperature reports for all four probes. Their structural fields are decoded and retained as raw values for diagnostics, but the target is not yet exposed as a Home Assistant temperature entity because the public research leaves the C/F target scaling boundary unresolved. No settings writes are enabled.
+
+During the first live test, all four dock states matched the physical charging station. Removing probe 1 changed the dock state and produced 23.0 °C for both core and ambient at room temperature, while docked probes remained unavailable.
+
+### Experimental setting writes
+
+For controlled bench testing, disabled-by-default Home Assistant controls are implemented for:
+
+- C/F unit (`03`, read/report `04`);
+- display brightness (`05`, report `06`);
+- Wi-Fi enabled state (`12`, report `42`);
+- auto-sleep (`40`, report `41`).
+
+Each write is followed by a report request and FF02 readback attempt. Target-temperature and volume writes remain intentionally disabled until their unresolved semantics are physically confirmed.
+
+### Validation required
+
+Continue to verify:
+
+- probes 2-4 and channel ordering;
+- unequal core/ambient temperatures;
+- authentication handshake details in debug capture;
+- reconnect/backoff behavior through the Olimex ESPHome Bluetooth proxy;
+- Home Assistant restart recovery;
+- single-central limitation when the INKBIRD phone app is connected;
+- Wi-Fi/app/Apple Watch coexistence. The INT-14-BW coexistence case is now physically confirmed with the iPhone app using Wi-Fi while Home Assistant owns BLE through the Olimex proxy.
+
+## TNT-11-B
+
+No protocol assumptions will be committed yet. When the device arrives we will capture:
+
+1. advertisement name and manufacturer/service data;
+2. GATT services and characteristic properties;
+3. notifications while inserting/removing/heating the probe;
+4. battery behavior;
+5. whether authentication is required;
+6. whether it belongs to the same FF00/auth family as other recent INKBIRD thermometers.
+
+## Licensing approach
+
+Our repository is MIT licensed. The main protocol references listed above are also MIT licensed. Protocol facts can be independently implemented. If we copy or substantially adapt source code from an MIT project, its copyright and permission notice must be retained in the relevant distribution/source context.
+
+For clarity and maintainability, the preferred approach is:
+
+- use public projects as protocol references;
+- write our own device-driver structure and Home Assistant integration code;
+- reuse small protocol algorithms only where that reduces risk, with explicit attribution;
+- document provenance here;
+- validate all safety-relevant control behavior on our own hardware.
+
+## Planned driver boundary
+
+```
+Home Assistant Bluetooth stack / ESPHome proxy
+                 |
+          connection layer
+                 |
+       +---------+---------+
+       |         |         |
+   ISC-027BW  INT-14-BW  TNT-11-B
+    driver      driver     driver
+       |         |         |
+       +---------+---------+
+                 |
+       HA entities / device model
+```
+
+This keeps connection/retry behavior reusable while protocol parsing and commands remain model-specific.
