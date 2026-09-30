@@ -15,7 +15,6 @@ from homeassistant.const import (
     EntityCategory,
     Platform,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import callback
 from homeassistant.helpers import entity_registry as er
@@ -48,17 +47,6 @@ INT14BW_NUMBERS = (
         native_max_value=100,
         native_step=1,
         native_unit_of_measurement=PERCENTAGE,
-        entity_category=EntityCategory.CONFIG,
-    ),
-    InkbirdNumberDescription(
-        key="auto_sleep_control",
-        translation_key="auto_sleep_control",
-        data_key="auto_sleep_minutes",
-        native_min_value=0,
-        native_max_value=1092,
-        native_step=1,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
     ),
 )
