@@ -38,7 +38,7 @@ Hardware validation matrix:
 | Device | HA via BLE | INKBIRD app via Wi-Fi at same time | Apple Watch via app | Status |
 | --- | --- | --- | --- | --- |
 | ISC-027BW | Planned | To validate | To validate | Pending hardware |
-| INT-14-BW | Planned | To validate | Officially advertised; coexistence to validate | Pending hardware |
+| INT-14-BW | Confirmed | Confirmed with iPhone app over Wi-Fi | Officially advertised; coexistence to validate | Partial hardware validation |
 | TNT-11-B | To investigate | Not assumed | Not assumed | Pending hardware |
 
 Tests should include starting Home Assistant first, starting the app first, reconnecting Wi-Fi, moving the phone out of BLE range, and verifying that an app opened in the background does not steal the BLE session from Home Assistant when Wi-Fi monitoring is available.
@@ -63,7 +63,7 @@ Documented frame properties:
 - Temperature values are unsigned little-endian Fahrenheit x10.
 - CRC16-Modbus is calculated over bytes 0-17 and stored in bytes 18-19.
 - FFF2 bytes 0-7 contain four temperature values; byte 8 contains actual fan output in percent.
-- FFF1 byte 0 represents fan on/off. Public reverse engineering describes byte 6 as a fan speed field, but this has not proven to be a user-settable fan power on the physical unit.
+- FFF1 byte 0 represents fan on/off. Public reverse engineering describes byte 6 as a fan speed field, but physical testing shows that fan output is automatically regulated by the controller; the integration does not expose a fan-power write.
 - FFF3 contains grill target temperature and probe alarm targets.
 
 ### Independent Wi-Fi/Tuya research
@@ -72,7 +72,7 @@ Two public projects also document the ISC-027BW over its Wi-Fi/Tuya path. These 
 
 ### Physical hardware observation
 
-The first physical ISC-027BW advertises as `S27` through the Olimex ESPHome Bluetooth proxy. The advertisement is connectable and includes vendor service UUID FFF0 plus manufacturer data. Automatic discovery therefore accepts the physically confirmed `S27` name.
+The first physical ISC-027BW advertises as `S27` through the Olimex ESPHome Bluetooth proxy. The advertisement is connectable and includes vendor service UUID FFF0 plus manufacturer data. Automatic discovery therefore accepts the physically confirmed `S27` name. Physical testing confirms BLE fan on/off, automatic fan-output regulation, and automatic fan shutdown when the grill/pit probe is absent.
 
 ### Validation required
 
@@ -150,7 +150,7 @@ Continue to verify:
 - reconnect/backoff behavior through the Olimex ESPHome Bluetooth proxy;
 - Home Assistant restart recovery;
 - single-central limitation when the INKBIRD phone app is connected;
-- Wi-Fi/app/Apple Watch coexistence.
+- Wi-Fi/app/Apple Watch coexistence. The INT-14-BW coexistence case is now physically confirmed with the iPhone app using Wi-Fi while Home Assistant owns BLE through the Olimex proxy.
 
 ## TNT-11-B
 

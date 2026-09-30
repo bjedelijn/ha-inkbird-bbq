@@ -12,6 +12,7 @@ The project is currently in pre-release development.
 - Confirmed probe 1 return-to-dock behavior and probe 2 channel mapping with distinct 27.0 °C core / 24.0 °C ambient values.
 - Confirmed probe 3 and probe 4 dock/undock mapping and temperature reporting on physical hardware.
 - Confirmed automatic reconnect after power-cycling the physical INT-14-BW base station through the Olimex Bluetooth proxy.
+- Confirmed INT-14-BW BLE coexistence with the INKBIRD iPhone app over Wi-Fi.
 - Added a local Home Assistant brand icon representing probes, wireless BBQ monitoring and planned blower/fan control.
 - Added explicit dark and HiDPI brand icon variants so Home Assistant's local Brands API does not fall back to the placeholder for `dark_icon@2x.png`.
 - Replaced the malformed 1x brand icon assets and strengthened CI to verify full PNG decode, not only headers and dimensions.
@@ -20,6 +21,7 @@ The project is currently in pre-release development.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
 - Added disabled-by-default experimental write controls for ISC-027BW fan on/off, pit target and probe alarms, all using immediate readback; fan power is reported as automatic actual output rather than a user control.
+- Confirmed on physical ISC-027BW hardware that fan power is automatically regulated, BLE fan on/off works, and the controller disables the fan when the grill/pit probe is absent.
 - Added disabled-by-default experimental write controls for INT-14-BW C/F, display brightness, Wi-Fi state and auto-sleep; target-temperature writes remain disabled.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.
 - Added safe read-only INT-14-BW settings queries for temperature unit, display brightness, Wi-Fi state and auto-sleep.

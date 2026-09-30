@@ -131,19 +131,14 @@ def build_fan_control_frame(
     current: bytes,
     *,
     fan_on: bool | None = None,
-    speed: int | None = None,
 ) -> bytes:
-    """Build an FFF1 control frame while preserving unknown bytes."""
+    """Build an FFF1 fan on/off frame while preserving all other fields."""
     validate_frame(current)
     payload = bytearray(current)
 
     if fan_on is not None:
         payload[0] = 1 if fan_on else 0
 
-    if speed is not None:
-        if not 0 <= speed <= 100:
-            raise ValueError("Fan speed must be between 0 and 100")
-        payload[6] = speed
 
     struct.pack_into(
         "<H",

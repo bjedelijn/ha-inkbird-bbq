@@ -108,12 +108,19 @@ Verify:
 
 ### Wi-Fi/app coexistence
 
-While Home Assistant owns BLE:
+Confirmed for the INT-14-BW: Home Assistant owns the BLE connection through the Olimex proxy while the INKBIRD iPhone app remains connected to the controller over Wi-Fi. The HA values continued to update during this test.
 
-- verify the controller remains connected to Wi-Fi;
-- verify the INKBIRD app can still read data over Wi-Fi;
-- verify changing views/settings in the app does not steal BLE from Home Assistant;
-- verify Apple Watch behavior if the model/app exposes it.
+Still validate:
+
+- the same coexistence behavior on the ISC-027BW;
+- whether opening the app can ever seize the BLE session;
+- Apple Watch behavior.
+
+### Fan behavior confirmed
+
+Physical testing confirms that the ISC-027BW fan power is automatically regulated. The BLE control can switch the fan on/off, while FFF2 reports the actual automatic fan output percentage. The controller also switches the fan back off when the grill/pit probe is absent.
+
+The fan-power number control is therefore not exposed in Home Assistant.
 
 ### Experimental control writes
 

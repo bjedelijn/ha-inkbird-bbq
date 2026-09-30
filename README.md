@@ -75,11 +75,11 @@ The development branch already contains:
 
 TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
-The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation now confirms base/probe battery reporting, all four probe channel mappings, dock/undock behavior, separate core/ambient values, and automatic reconnect after the INT-14-BW base station is powered off and back on through the Olimex ESPHome Bluetooth proxy. Proxy/HA restart recovery and app/Wi-Fi coexistence still need validation before the model is marked hardware validated.
+The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation now confirms base/probe battery reporting, all four probe channel mappings, dock/undock behavior, separate core/ambient values, automatic reconnect after a base-station power cycle, and simultaneous use of the INKBIRD iPhone app over Wi-Fi while Home Assistant owns the BLE connection. Proxy/HA restart recovery and longer-term coexistence testing still need validation before the model is marked hardware validated.
 
 The first physical ISC-027BW has now been detected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. Read-only GATT telemetry still needs live validation before enabling any control writes.
 
-The first physical ISC-027BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. The read-only GATT path is working: fan state/output and target/alarm values have been read from the physical controller. Live temperature/probe behavior and reconnect still need further validation.
+The first physical ISC-027BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. The read-only GATT path is working for temperatures, fan state/output and target/alarm values. Physical testing also confirms that fan output is automatically regulated by the controller; Bluetooth can force fan on/off, but fan power is not a user-settable control.
 
 Physical hardware validation is still required before experimental ISC-027BW controls can be considered production-ready.
 
@@ -107,7 +107,7 @@ Public reverse-engineering references and protocol notes are tracked in [docs/PR
 
 ## Safety
 
-The ISC-027BW controls combustion airflow. Experimental write entities are present only for bench validation and are disabled by default in Home Assistant. Do not test fan controls on a live fire. Production use of fan/setpoint writes requires completed protocol validation, readback checks and fail-safe behavior. INT-14-BW target-temperature writes remain disabled until their scaling is physically verified.
+The ISC-027BW controls combustion airflow. Experimental write entities are present only for bench validation and are disabled by default in Home Assistant. Do not test fan controls on a live fire. Production use of fan writes requires completed protocol validation, readback checks and fail-safe behavior. Fan power is automatically regulated by the ISC-027BW and is not exposed as a user-settable control. INT-14-BW target-temperature writes remain disabled until their scaling is physically verified.
 
 ## Changelog
 
