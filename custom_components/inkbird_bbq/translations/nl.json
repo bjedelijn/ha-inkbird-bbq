@@ -87,14 +87,8 @@
       "probe_4_battery": {
         "name": "Batterij probe 4"
       },
-      "temperature_unit": {
-        "name": "Temperatuureenheid"
-      },
-      "display_brightness": {
-        "name": "Schermhelderheid"
-      },
-      "auto_sleep_minutes": {
-        "name": "Automatisch slapen"
+      "probe_temperature": {
+        "name": "Vleesprobe temperatuur"
       }
     },
     "binary_sensor": {
@@ -121,9 +115,6 @@
       "display_brightness_control": {
         "name": "Schermhelderheid instellen (experimenteel)"
       },
-      "auto_sleep_control": {
-        "name": "Automatisch slapen instellen (experimenteel)"
-      },
       "pit_target_control": {
         "name": "Kamado doeltemperatuur instellen (experimenteel)"
       },
@@ -145,9 +136,6 @@
     "switch": {
       "fan_control": {
         "name": "Ventilator bediening (experimenteel)"
-      },
-      "wifi_control": {
-        "name": "Wi-Fi bediening (experimenteel)"
       }
     }
   }
