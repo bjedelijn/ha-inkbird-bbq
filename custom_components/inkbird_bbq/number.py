@@ -13,11 +13,9 @@ from homeassistant.components.number import (
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
-    Platform,
     UnitOfTemperature,
 )
 from homeassistant.core import callback
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -77,28 +75,21 @@ ISC027BW_NUMBERS = (
         )
         for probe in range(1, 4)
     ),
+    *(
+        InkbirdNumberDescription(
+            key=f"probe_{probe}_target_control",
+            translation_key=f"probe_{probe}_target_control",
+            data_key=f"probe_{probe}_target",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            mode=NumberMode.BOX,
+            entity_category=EntityCategory.CONFIG,
+        )
+        for probe in range(1, 5)
+    ),
 )
-
-
-def _remove_obsolete_fan_setpoint_entity(
-    hass: Any,
-    coordinator: InkbirdBbqCoordinator,
-) -> None:
-    """Remove the old ISC fan-power control from the entity registry."""
-    if coordinator.model != MODEL_ISC_027BW:
-        return
-
-    unique_id = (
-        f"{coordinator.address}_fan_setpoint_control".lower().replace(":", "")
-    )
-    entity_registry = er.async_get(hass)
-    entity_id = entity_registry.async_get_entity_id(
-        Platform.NUMBER,
-        DOMAIN,
-        unique_id,
-    )
-    if entity_id is not None:
-        entity_registry.async_remove(entity_id)
 
 
 async def async_setup_entry(
@@ -106,9 +97,8 @@ async def async_setup_entry(
     entry: InkbirdBbqConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up disabled-by-default experimental number controls."""
+    """Set up experimental number controls."""
     coordinator = entry.runtime_data
-    _remove_obsolete_fan_setpoint_entity(hass, coordinator)
     descriptions = (
         ISC027BW_NUMBERS
         if coordinator.model == MODEL_ISC_027BW
@@ -126,7 +116,7 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
 
     entity_description: InkbirdNumberDescription
     _attr_has_entity_name = True
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(
         self,
@@ -161,10 +151,6 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
             if key == "display_brightness_control":
                 await self.coordinator.async_set_display_brightness(round(value))
                 return
-            if key == "auto_sleep_control":
-                await self.coordinator.async_set_auto_sleep_minutes(round(value))
-                return
-
         if isinstance(self.coordinator, Isc027bwCoordinator):
             if key == "pit_target_control":
                 await self.coordinator.async_set_pit_target(value)
@@ -172,6 +158,10 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
             if key.startswith("probe_") and key.endswith("_alarm_control"):
                 probe = int(key.split("_")[1])
                 await self.coordinator.async_set_probe_alarm(probe, value)
+                return
+            if key.startswith("probe_") and key.endswith("_target_control"):
+                probe = int(key.split("_")[1])
+                await self.coordinator.async_set_probe_target(probe, value)
                 return
 
         raise RuntimeError(f"Unsupported experimental number control: {key}")
