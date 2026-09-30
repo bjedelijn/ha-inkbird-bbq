@@ -145,7 +145,12 @@ def build_fan_control_frame(
             raise ValueError("Fan speed must be between 0 and 100")
         payload[6] = speed
 
-    struct.pack_into("<H", payload, CRC_DATA_LENGTH, crc16_modbus(payload[:CRC_DATA_LENGTH]))
+    struct.pack_into(
+        "<H",
+        payload,
+        CRC_DATA_LENGTH,
+        crc16_modbus(payload[:CRC_DATA_LENGTH]),
+    )
     return bytes(payload)
 
 

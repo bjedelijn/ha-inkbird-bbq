@@ -145,7 +145,6 @@ def test_control_callback_maps_read_only_settings() -> None:
     assert {"volume_raw": "5a32"} in published
 
 
-
 @pytest.mark.asyncio
 async def test_settings_read_uses_notification_parser_for_ff02_readback() -> None:
     coordinator, published = _coordinator_stub()
@@ -175,7 +174,6 @@ async def test_settings_read_uses_notification_parser_for_ff02_readback() -> Non
     assert {"wifi_enabled": True} in published
     assert {"auto_sleep_minutes": 5} in published
 
-
 @pytest.mark.asyncio
 async def test_int14_setting_write_requests_readback() -> None:
     coordinator, published = _coordinator_stub()
@@ -188,6 +186,12 @@ async def test_int14_setting_write_requests_readback() -> None:
 
     await coordinator.async_set_display_brightness(50)
 
-    assert client.write_gatt_char.await_args_list[0].args[1] == bytes.fromhex("02 05 32")
-    assert client.write_gatt_char.await_args_list[1].args[1] == bytes.fromhex("01 06")
+    assert (
+        client.write_gatt_char.await_args_list[0].args[1]
+        == bytes.fromhex("02 05 32")
+    )
+    assert (
+        client.write_gatt_char.await_args_list[1].args[1]
+        == bytes.fromhex("01 06")
+    )
     assert {"display_brightness": 50} in published

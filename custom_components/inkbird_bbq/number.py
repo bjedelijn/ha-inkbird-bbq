@@ -10,7 +10,12 @@ from homeassistant.components.number import (
     NumberEntityDescription,
     NumberMode,
 )
-from homeassistant.const import EntityCategory, PERCENTAGE, UnitOfTemperature, UnitOfTime
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -18,7 +23,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
 from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
-from .coordinator import InkbirdBbqCoordinator, Int14bwCoordinator, Isc027bwCoordinator
+from .coordinator import (
+    InkbirdBbqCoordinator,
+    Int14bwCoordinator,
+    Isc027bwCoordinator,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
