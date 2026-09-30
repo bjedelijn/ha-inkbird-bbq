@@ -44,6 +44,8 @@ from .devices.isc027bw import (
 )
 from .devices.tnt11b import (
     CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
+)
+from .devices.tnt11b import (
     decode_notification as decode_tnt_notification,
 )
 
