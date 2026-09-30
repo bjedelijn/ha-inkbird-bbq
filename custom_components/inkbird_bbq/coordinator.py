@@ -20,22 +20,17 @@ from .devices.int14bw import (
     CHAR_CONTROL,
     CHAR_STATE,
     CHAR_TEMPERATURE,
-    build_auto_sleep_write,
     build_brightness_write,
     build_challenge_request,
     build_clock_sync,
-    build_settings_read_requests,
     build_temperature_unit_write,
     build_verify_response,
-    build_wifi_mode_write,
     decode_temperatures,
-    parse_auto_sleep_minutes,
     parse_battery,
     parse_brightness,
     parse_ff02_frames,
     parse_target_report,
     parse_temperature_unit,
-    parse_wifi_enabled,
 )
 from .devices.isc027bw import (
     CHAR_FAN,
@@ -52,14 +47,6 @@ _LOGGER = logging.getLogger(__name__)
 _INT14_CURRENT_INFO_REQUEST = bytes.fromhex(
     "02 f1 01 02 f1 03 02 f1 19"
 )
-_INT14_SETTINGS_KEYS = (
-    "temperature_unit",
-    "display_brightness",
-    "wifi_enabled",
-    "auto_sleep_minutes",
-)
-_INT14_SETTINGS_RETRY_SECONDS = 30.0
-
 
 class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Base coordinator for a persistent INKBIRD Bluetooth session."""
@@ -320,7 +307,6 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             response=False,
         )
         await asyncio.sleep(0.5)
-        await self._async_read_settings(client)
         await client.write_gatt_char(
             CHAR_CONTROL,
             _INT14_CURRENT_INFO_REQUEST,
@@ -328,7 +314,6 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         )
 
         self._set_available(True)
-        last_settings_attempt = asyncio.get_running_loop().time()
 
         while client.is_connected and not self._stop.is_set():
             try:
@@ -341,48 +326,8 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                         response=False,
                     )
 
-                now = asyncio.get_running_loop().time()
-                settings_missing = any(
-                    key not in self.data for key in _INT14_SETTINGS_KEYS
-                )
-                if (
-                    settings_missing
-                    and now - last_settings_attempt >= _INT14_SETTINGS_RETRY_SECONDS
-                ):
-                    await self._async_read_settings(client)
-                    last_settings_attempt = now
-
         self._client = None
         self._set_available(False)
-
-    async def _async_read_settings(self, client: BleakClient) -> None:
-        """Request INT-14-BW settings and try FF02 readback after each request."""
-        async with self._io_lock:
-            for request in build_settings_read_requests():
-                _LOGGER.debug("INT-14-BW settings read request: %s", request.hex())
-                await client.write_gatt_char(
-                    CHAR_CONTROL,
-                    request,
-                    response=False,
-                )
-                await asyncio.sleep(0.25)
-
-                try:
-                    raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
-                except Exception as err:  # noqa: BLE001 - optional readback path
-                    _LOGGER.debug(
-                        "INT-14-BW FF02 readback failed after %s: %s",
-                        request.hex(),
-                        err,
-                    )
-                else:
-                    if raw:
-                        _LOGGER.debug(
-                            "INT-14-BW FF02 readback after %s: %s",
-                            request.hex(),
-                            raw.hex(),
-                        )
-                        self._on_control(None, bytearray(raw))
 
     async def _async_write_setting(
         self,
@@ -433,20 +378,6 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             bytes.fromhex("01 06"),
         )
 
-    async def async_set_wifi_enabled(self, enabled: bool) -> None:
-        """Experimentally set INT-14-BW Wi-Fi enabled state."""
-        await self._async_write_setting(
-            build_wifi_mode_write(enabled),
-            bytes.fromhex("01 42"),
-        )
-
-    async def async_set_auto_sleep_minutes(self, minutes: int) -> None:
-        """Experimentally set INT-14-BW auto-sleep; zero disables it."""
-        await self._async_write_setting(
-            build_auto_sleep_write(minutes),
-            bytes.fromhex("01 41"),
-        )
-
     def _on_control(
         self,
         _characteristic: BleakGATTCharacteristic | None,
@@ -473,14 +404,6 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                 brightness = parse_brightness(payload)
                 if brightness is not None:
                     self._publish(display_brightness=brightness)
-            elif frame_type == 0x42:
-                wifi_enabled = parse_wifi_enabled(payload)
-                if wifi_enabled is not None:
-                    self._publish(wifi_enabled=wifi_enabled)
-            elif frame_type == 0x41:
-                auto_sleep = parse_auto_sleep_minutes(payload)
-                if auto_sleep is not None:
-                    self._publish(auto_sleep_minutes=auto_sleep)
             elif frame_type == 0x02:
                 target = parse_target_report(payload)
                 if target is not None:
