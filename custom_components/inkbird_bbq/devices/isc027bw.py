@@ -179,5 +179,10 @@ def build_target_control_frame(
                 celsius_to_fahrenheit10(value),
             )
 
-    struct.pack_into("<H", payload, CRC_DATA_LENGTH, crc16_modbus(payload[:CRC_DATA_LENGTH]))
+    struct.pack_into(
+        "<H",
+        payload,
+        CRC_DATA_LENGTH,
+        crc16_modbus(payload[:CRC_DATA_LENGTH]),
+    )
     return bytes(payload)
