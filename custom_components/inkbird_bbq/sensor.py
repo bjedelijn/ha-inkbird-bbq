@@ -18,7 +18,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
-from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    MODEL_INT_14_BW,
+    MODEL_ISC_027BW,
+    MODEL_TNT_11_B,
+)
 from .coordinator import InkbirdBbqCoordinator
 
 
@@ -99,6 +105,17 @@ ISC027BW_SENSORS: tuple[InkbirdSensorDescription, ...] = (
     ),
 )
 
+TNT11B_SENSORS: tuple[InkbirdSensorDescription, ...] = (
+    InkbirdSensorDescription(
+        key="probe_temperature",
+        translation_key="probe_temperature",
+        data_key="probe_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
+
 INT14BW_SENSORS: tuple[InkbirdSensorDescription, ...] = tuple(
     [
         InkbirdSensorDescription(
@@ -158,6 +175,8 @@ async def async_setup_entry(
         descriptions = ISC027BW_SENSORS
     elif coordinator.model == MODEL_INT_14_BW:
         descriptions = INT14BW_SENSORS
+    elif coordinator.model == MODEL_TNT_11_B:
+        descriptions = TNT11B_SENSORS
     else:
         descriptions = ()
 
