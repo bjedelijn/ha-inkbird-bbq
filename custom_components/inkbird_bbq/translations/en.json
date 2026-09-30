@@ -126,6 +126,18 @@
       },
       "probe_3_alarm_control": {
         "name": "Set meat probe 3 alarm (experimental)"
+      },
+      "probe_1_target_control": {
+        "name": "Set probe 1 target temperature (experimental)"
+      },
+      "probe_2_target_control": {
+        "name": "Set probe 2 target temperature (experimental)"
+      },
+      "probe_3_target_control": {
+        "name": "Set probe 3 target temperature (experimental)"
+      },
+      "probe_4_target_control": {
+        "name": "Set probe 4 target temperature (experimental)"
       }
     },
     "select": {

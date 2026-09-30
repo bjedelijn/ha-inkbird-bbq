@@ -126,6 +126,18 @@
       },
       "probe_3_alarm_control": {
         "name": "Vleesprobe 3 alarm instellen (experimenteel)"
+      },
+      "probe_1_target_control": {
+        "name": "Doeltemperatuur probe 1 instellen (experimenteel)"
+      },
+      "probe_2_target_control": {
+        "name": "Doeltemperatuur probe 2 instellen (experimenteel)"
+      },
+      "probe_3_target_control": {
+        "name": "Doeltemperatuur probe 3 instellen (experimenteel)"
+      },
+      "probe_4_target_control": {
+        "name": "Doeltemperatuur probe 4 instellen (experimenteel)"
       }
     },
     "select": {

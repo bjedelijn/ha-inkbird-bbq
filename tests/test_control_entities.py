@@ -12,16 +12,16 @@ from custom_components.inkbird_bbq.switch import InkbirdExperimentalSwitch
 def test_control_number_sets_are_model_specific() -> None:
     assert {item.key for item in INT14BW_NUMBERS} == {
         "display_brightness_control",
+        "probe_1_target_control",
+        "probe_2_target_control",
+        "probe_3_target_control",
+        "probe_4_target_control",
     }
     assert {item.key for item in ISC027BW_NUMBERS} == {
         "pit_target_control",
         "probe_1_alarm_control",
         "probe_2_alarm_control",
         "probe_3_alarm_control",
-        "probe_1_target_control",
-        "probe_2_target_control",
-        "probe_3_target_control",
-        "probe_4_target_control",
     }
 
 
