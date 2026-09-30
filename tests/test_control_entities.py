@@ -24,6 +24,14 @@ def test_control_number_sets_are_model_specific() -> None:
 
 
 def test_experimental_controls_are_disabled_by_default() -> None:
-    assert InkbirdBbqNumber._attr_entity_registry_enabled_default is False
-    assert InkbirdTemperatureUnitSelect._attr_entity_registry_enabled_default is False
-    assert InkbirdExperimentalSwitch._attr_entity_registry_enabled_default is False
+    assert (
+        object.__new__(InkbirdBbqNumber).entity_registry_enabled_default is False
+    )
+    assert (
+        object.__new__(InkbirdTemperatureUnitSelect).entity_registry_enabled_default
+        is False
+    )
+    assert (
+        object.__new__(InkbirdExperimentalSwitch).entity_registry_enabled_default
+        is False
+    )
