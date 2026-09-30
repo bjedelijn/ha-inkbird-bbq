@@ -220,9 +220,9 @@ def parse_brightness(payload: bytes) -> int | None:
 def parse_target_report(payload: bytes) -> Int14bwTargetReport | None:
     """Parse the known structural fields of an FF02 type 0x02 target report.
 
-    The target scaling is deliberately left raw until confirmed on physical
-    hardware. Public reverse engineering leaves the C/F scaling boundary
-    unresolved for target-temperature writes.
+    Physical INT-14-BW validation confirms target values are stored on the
+    wire as degrees Fahrenheit x10, unlike live telemetry which is Celsius x10.
+    Keep the raw values here so callers can preserve the untouched low target.
     """
     if len(payload) < 8:
         return None
@@ -256,11 +256,18 @@ def build_brightness_write(percent: int) -> bytes:
     return bytes((0x02, 0x05, percent))
 
 
+def target_raw_to_celsius(raw_value: int) -> float:
+    """Convert an INT-14-BW target from Fahrenheit x10 to Celsius."""
+    fahrenheit = raw_value / 10.0
+    return round((fahrenheit - 32.0) * 5.0 / 9.0, 1)
+
+
 def celsius_to_target_raw(value: float) -> int:
-    """Encode an INT-14-BW target as degrees Celsius x10."""
+    """Encode an INT-14-BW Celsius target as Fahrenheit x10 on the wire."""
     if not 0 <= value <= 100:
         raise ValueError("Target temperature must be between 0 and 100 C")
-    return round(value * 10)
+    fahrenheit = value * 9.0 / 5.0 + 32.0
+    return round(fahrenheit * 10)
 
 
 def build_target_temperature_write(

@@ -9,7 +9,9 @@ import pytest
 from custom_components.inkbird_bbq.devices.int14bw import (
     build_challenge_request,
     build_clock_sync,
+    build_target_temperature_write,
     build_verify_response,
+    celsius_to_target_raw,
     crc8_cdma2000,
     crc8_dvb_s2,
     decode_temperatures,
@@ -17,6 +19,7 @@ from custom_components.inkbird_bbq.devices.int14bw import (
     parse_battery,
     parse_ff02_frames,
     parse_target_report,
+    target_raw_to_celsius,
 )
 
 
@@ -103,7 +106,7 @@ def test_battery_parser() -> None:
     assert parse_battery(bytes((95, 0x7F, 101, 42))) == (95, None, 100, 42)
 
 
-def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
+def test_target_report_keeps_wire_value_raw() -> None:
     report = parse_target_report(bytes.fromhex("02 10 e4 02 00 00 05 00"))
     assert report is not None
     assert report.probe == 2
@@ -114,3 +117,14 @@ def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
 
     assert parse_target_report(bytes.fromhex("03 10 e4 02 00 00 05 00")) is None
     assert parse_target_report(bytes.fromhex("02 10 e4")) is None
+
+
+def test_target_temperature_wire_value_is_fahrenheit_x10() -> None:
+    """Hardware-validated target encoding is Fahrenheit x10 on FF02."""
+    assert target_raw_to_celsius(850) == 29.4
+    assert target_raw_to_celsius(1580) == 70.0
+    assert celsius_to_target_raw(70.0) == 1580
+    assert celsius_to_target_raw(85.0) == 1850
+
+    frame = build_target_temperature_write(1, 70.0)
+    assert int.from_bytes(frame[4:6], "little") == 1580

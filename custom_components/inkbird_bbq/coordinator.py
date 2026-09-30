@@ -24,6 +24,7 @@ from .devices.int14bw import (
     build_challenge_request,
     build_clock_sync,
     build_target_temperature_write,
+    celsius_to_target_raw,
     build_temperature_unit_write,
     build_verify_response,
     decode_temperatures,
@@ -32,6 +33,7 @@ from .devices.int14bw import (
     parse_ff02_frames,
     parse_target_report,
     parse_temperature_unit,
+    target_raw_to_celsius,
 )
 from .devices.isc027bw import (
     CHAR_FAN,
@@ -433,7 +435,7 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                     f"No target readback received for INT-14-BW probe {probe}"
                 )
 
-            expected = round(target_celsius * 10)
+            expected = celsius_to_target_raw(target_celsius)
             if updated.high_raw != expected:
                 raise RuntimeError(
                     f"INT-14-BW probe {probe} target readback mismatch: "
@@ -486,8 +488,8 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                     self._target_reports[target.probe] = target
                     self._publish(
                         **{
-                            f"probe_{target.probe}_target": round(
-                                target.high_raw / 10.0, 1
+                            f"probe_{target.probe}_target": target_raw_to_celsius(
+                                target.high_raw
                             ),
                             f"probe_{target.probe}_target_raw": target.high_raw,
                             f"probe_{target.probe}_target_low_raw": target.low_raw,

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, Platform
 
+from .const import CONF_MODEL, MODEL_INT_14_BW
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -22,6 +24,34 @@ PLATFORMS: list[Platform] = [
 
 type InkbirdBbqConfigEntry = ConfigEntry["InkbirdBbqCoordinator"]
 
+_DEPRECATED_INT14_ENTITY_SUFFIXES = {
+    "_temperature_unit",
+    "_display_brightness",
+    "_auto_sleep_minutes",
+    "_auto_sleep_control",
+    "_wifi_control",
+    "_wifi_enabled",
+}
+
+
+def _cleanup_deprecated_int14_entities(
+    hass: HomeAssistant,
+    entry: InkbirdBbqConfigEntry,
+) -> None:
+    """Remove obsolete INT-14-BW entities left behind by development builds."""
+    if entry.data.get(CONF_MODEL) != MODEL_INT_14_BW:
+        return
+
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if any(
+            entity_entry.unique_id.endswith(suffix)
+            for suffix in _DEPRECATED_INT14_ENTITY_SUFFIXES
+        ):
+            registry.async_remove(entity_entry.entity_id)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -31,8 +61,9 @@ async def async_setup_entry(
     from homeassistant.components import bluetooth
     from homeassistant.exceptions import ConfigEntryNotReady
 
-    from .const import CONF_MODEL
     from .coordinator import create_coordinator
+
+    _cleanup_deprecated_int14_entities(hass, entry)
 
     if not bluetooth.async_scanner_count(hass, connectable=True):
         raise ConfigEntryNotReady(
