@@ -627,4 +627,6 @@ def create_coordinator(
         return Isc027bwCoordinator(hass, entry, address)
     if model == MODEL_INT_14_BW:
         return Int14bwCoordinator(hass, entry, address)
+    if model == MODEL_TNT_11_B:
+        return Tnt11bCoordinator(hass, entry, address)
     raise ValueError(f"Unsupported INKBIRD BBQ model: {model}")
