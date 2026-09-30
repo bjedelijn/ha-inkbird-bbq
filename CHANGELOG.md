@@ -8,6 +8,8 @@ The project is currently in pre-release development.
 
 - Added Home Assistant Bluetooth discovery for ISC-027BW and INT-14-BW.
 - Validated the first physical INT-14-BW session through the Olimex ESPHome Bluetooth proxy, including battery values, all four dock states and probe 1 core/ambient temperature reporting.
+- Confirmed probe 1 return-to-dock behavior and probe 2 channel mapping with distinct 27.0 °C core / 24.0 °C ambient values.
+- Added a local Home Assistant brand icon representing probes, wireless BBQ monitoring and planned blower/fan control.
 - Added persistent model-specific BLE coordinators with reconnect handling.
 - Added Bluetooth reconnect-loop tests for missing devices, session failures, disconnect cleanup and cancellation.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.

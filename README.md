@@ -72,7 +72,7 @@ The development branch already contains:
 
 TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
 
-The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation confirms base/probe battery reporting, all four dock states and probe 1 core/ambient temperature reporting after removal from the charging station. Reconnect, all-channel mapping, unequal core/ambient values and app/Wi-Fi coexistence still need validation before the model is marked hardware validated.
+The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation confirms base/probe battery reporting, all four dock states, probe 1 dock/undock behavior, probe 1 temperature reporting and probe 2 mapping with distinct core/ambient values (27.0 °C / 24.0 °C). Probes 3-4, reconnect behavior and app/Wi-Fi coexistence still need validation before the model is marked hardware validated.
 
 Physical hardware validation is still required before enabling ISC-027BW control writes.
 

@@ -67,6 +67,19 @@ jobs:
           }
           PY
 
+      - name: Validate local brand icon
+        run: |
+          python - <<'PY'
+          import struct
+          from pathlib import Path
+
+          icon = Path("custom_components/inkbird_bbq/brand/icon.png")
+          data = icon.read_bytes()
+          assert data[:8] == b"\x89PNG\r\n\x1a\n"
+          width, height = struct.unpack(">II", data[16:24])
+          assert (width, height) == (256, 256)
+          PY
+
       - name: Ruff
         run: ruff check custom_components tests
 

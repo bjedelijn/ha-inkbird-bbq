@@ -160,13 +160,17 @@ Confirmed on physical hardware:
 - probe 1 then reports both core and ambient temperature;
 - first room-temperature observation reported 23.0 °C core and 23.0 °C ambient.
 
+Additional physical validation:
+
+- returning probe 1 to the charging station restores the docked state and its temperature entities return to unavailable/unknown;
+- removing probe 2 correctly changes probe 2 to undocked;
+- probe 2 reported 27.0 °C core and 24.0 °C ambient during the test, confirming separate core/ambient offsets and probe 2 channel mapping.
+
 Still validate:
 
-- probes 2, 3 and 4 individually;
-- deliberately different temperatures per probe so channel mapping is unambiguous;
-- core versus ambient offset using unequal temperatures;
-- unavailable/sentinel values;
-- return-to-dock behavior.
+- probes 3 and 4 individually;
+- deliberately different temperatures on probes 3 and 4 so the remaining channel mapping is unambiguous;
+- unavailable/sentinel values beyond normal docking behavior.
 
 ### Battery reporting
 
