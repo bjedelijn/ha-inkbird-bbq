@@ -1,7 +1,7 @@
 """Tests for INKBIRD BBQ config-flow model matching."""
 
 from custom_components.inkbird_bbq.config_flow import _model_from_name
-from custom_components.inkbird_bbq.const import MODEL_INT_14_BW, MODEL_ISC_027BW
+from custom_components.inkbird_bbq.const import MODEL_INT_14_BW, MODEL_ISC_027BW, MODEL_TNT_11_B
 
 
 def test_known_models_match_exactly() -> None:
@@ -9,6 +9,7 @@ def test_known_models_match_exactly() -> None:
     assert _model_from_name("S27") == MODEL_ISC_027BW
     assert _model_from_name("INT-14-BW") == MODEL_INT_14_BW
     assert _model_from_name("INT-14-BW_WH") == MODEL_INT_14_BW
+    assert _model_from_name("BG-BT1W") == MODEL_TNT_11_B
 
 
 def test_unknown_and_similar_models_are_rejected() -> None:
