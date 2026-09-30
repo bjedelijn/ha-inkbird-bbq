@@ -217,27 +217,6 @@ def parse_brightness(payload: bytes) -> int | None:
     return min(payload[0], 100)
 
 
-def parse_wifi_enabled(payload: bytes) -> bool | None:
-    """Parse FF02 type 0x42 Wi-Fi switch state."""
-    if not payload:
-        return None
-    return bool(payload[0])
-
-
-def parse_auto_sleep_minutes(payload: bytes) -> int | None:
-    """Parse FF02 type 0x41 auto-sleep state into minutes.
-
-    Expected report layout mirrors the command: enabled byte + LE16 seconds.
-    Disabled auto-sleep is represented as 0 minutes.
-    """
-    if len(payload) < 3:
-        return None
-    if payload[0] == 0:
-        return 0
-    seconds = int.from_bytes(payload[1:3], "little")
-    return round(seconds / 60)
-
-
 def parse_target_report(payload: bytes) -> Int14bwTargetReport | None:
     """Parse the known structural fields of an FF02 type 0x02 target report.
 
@@ -277,26 +256,4 @@ def build_brightness_write(percent: int) -> bytes:
     return bytes((0x02, 0x05, percent))
 
 
-def build_wifi_mode_write(enabled: bool) -> bytes:
-    """Build FF02 Wi-Fi enable/disable write."""
-    return bytes((0x02, 0x12, 0x01 if enabled else 0x00))
 
-
-def build_auto_sleep_write(minutes: int) -> bytes:
-    """Build FF02 auto-sleep write; zero minutes disables auto-sleep."""
-    if not 0 <= minutes <= 1092:
-        raise ValueError("Auto-sleep must be between 0 and 1092 minutes")
-
-    if minutes == 0:
-        return bytes.fromhex("04 40 00 00 00")
-
-    seconds = minutes * 60
-    return bytes(
-        (
-            0x04,
-            0x40,
-            0x01,
-            seconds & 0xFF,
-            (seconds >> 8) & 0xFF,
-        )
-    )
