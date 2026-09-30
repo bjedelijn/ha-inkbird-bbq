@@ -63,7 +63,14 @@ Continue to verify after connecting:
 
 ### Read-only telemetry
 
-Check each value against the controller display/app:
+Initial physical connection through the Olimex proxy is confirmed. With the current bench setup, Home Assistant successfully read:
+
+- pit target: 107.2 °C;
+- fan running: off;
+- fan output: 0%;
+- three probe alarm targets: 310.0 °C.
+
+The live pit/probe temperatures were unknown during this observation. Continue by checking each value against the controller display/app:
 
 - pit temperature;
 - meat probe 1;
@@ -108,22 +115,29 @@ While Home Assistant owns BLE:
 - verify changing views/settings in the app does not steal BLE from Home Assistant;
 - verify Apple Watch behavior if the model/app exposes it.
 
-### Control writes
+### Experimental control writes
 
-Do **not** enable control entities yet.
+Experimental entities are included for bench validation and are **disabled by default**. Do not connect the blower to a live fire while validating writes.
 
-Before any write support is merged, separately validate:
+Validate in this order:
 
-- fan on/off encoding;
-- manual fan output/setpoint encoding;
-- pit target encoding;
-- probe alarm target encoding;
+1. pit target: change a small amount, confirm the controller display/app changes, then restore it;
+2. one probe alarm target: change, confirm, restore;
+3. blower physically disconnected from the kamado: fan on/off;
+4. blower still on the bench: fan setpoint 10%, 30%, 50%, then 0%;
+5. verify every write is reflected by the immediate FFF1/FFF3 readback;
+6. power-cycle and confirm the final values persist or reset exactly as the controller documents.
+
+Also validate:
+
 - CRC generation;
 - acceptable value ranges;
 - response/acknowledgement behavior;
 - behavior on BLE disconnect during a write;
 - behavior on Home Assistant restart;
 - safe fallback if Home Assistant is unavailable.
+
+These controls must remain disabled by default until this sequence is complete.
 
 ## INT-14-BW validation
 
@@ -183,7 +197,7 @@ Still validate:
 
 ### Read-only settings
 
-The integration now requests the following settings over FF02 after authentication. Each request is sent as a separate GATT write to avoid depending on a large negotiated BLE MTU through a Bluetooth proxy:
+The integration requests the following settings over FF02 after authentication. Each request is sent separately; because two physical tests still left these values unavailable, the driver also reads FF02 after every request and retries missing settings every 30 seconds:
 
 - temperature unit;
 - target report for probes 1-4;
@@ -192,7 +206,7 @@ The integration now requests the following settings over FF02 after authenticati
 - Wi-Fi enabled state;
 - auto-sleep.
 
-The first combined-read implementation created the entities but left these values unknown on the physical unit. The read path has therefore been changed to individual FF02 requests. Re-test the visible read-only entities against the physical display/app:
+The first combined-read implementation and the second individual-write implementation both created the entities but left these values unavailable on the physical unit. Re-test the readback/retry path against the physical display/app:
 
 - temperature unit;
 - display brightness;
@@ -201,7 +215,18 @@ The first combined-read implementation created the entities but left these value
 
 For target temperature, compare the captured raw value in diagnostics/debug logging with the app/display before exposing it as a temperature entity. The public protocol research still leaves the C/F scaling boundary unresolved for target writes.
 
-No settings writes are enabled yet.
+Target-temperature and volume writes remain disabled because their encoding/scaling is not sufficiently validated.
+
+### Experimental INT-14-BW setting writes
+
+Experimental setting controls are included but disabled by default. Validate them one at a time:
+
+1. temperature unit: C → F → C and confirm the base display changes;
+2. brightness: 100% → 50% → 100%;
+3. auto-sleep: set a small test value, confirm, then restore;
+4. Wi-Fi switch only after the other controls pass, because it can intentionally disconnect the base from Wi-Fi.
+
+After each write, confirm both the physical display/app and the FF02 readback/debug data. Do not enable INT-14-BW target-temperature writes until the target scaling question is resolved.
 
 ### Battery reporting
 

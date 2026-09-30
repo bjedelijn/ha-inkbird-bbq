@@ -19,8 +19,11 @@ The project is currently in pre-release development.
 - Added Bluetooth reconnect-loop tests for missing devices, session failures, disconnect cleanup and cancellation.
 - Added read-only ISC-027BW protocol decoding with CRC16-Modbus validation.
 - Added read-only ISC-027BW temperature, target, fan-output and fan-state entities.
+- Added disabled-by-default experimental write controls for ISC-027BW fan on/off, fan setpoint, pit target and probe alarms, all using immediate readback.
+- Added disabled-by-default experimental write controls for INT-14-BW C/F, display brightness, Wi-Fi state and auto-sleep; target-temperature writes remain disabled.
 - Added INT-14-BW challenge/response authentication, clock sync and frame parsing.
 - Added safe read-only INT-14-BW settings queries for temperature unit, display brightness, Wi-Fi state and auto-sleep.
+- Added FF02 characteristic readback, raw debug logging and 30-second retry for INT-14-BW settings after physical tests still returned unavailable values.
 - Changed INT-14-BW settings reads to individual FF02 GATT writes after the first physical test showed the entities but no returned values with a combined request.
 - Added raw target-temperature report capture for probes 1-4 without enabling target writes or assuming unresolved C/F scaling.
 - Added read-only INT-14-BW core/ambient temperature, battery and dock-state entities.

@@ -116,6 +116,42 @@
       "wifi_enabled": {
         "name": "Wi-Fi ingeschakeld"
       }
+    },
+    "number": {
+      "display_brightness_control": {
+        "name": "Schermhelderheid instellen (experimenteel)"
+      },
+      "auto_sleep_control": {
+        "name": "Automatisch slapen instellen (experimenteel)"
+      },
+      "fan_setpoint_control": {
+        "name": "Ventilatorvermogen instellen (experimenteel)"
+      },
+      "pit_target_control": {
+        "name": "Kamado doeltemperatuur instellen (experimenteel)"
+      },
+      "probe_1_alarm_control": {
+        "name": "Vleesprobe 1 alarm instellen (experimenteel)"
+      },
+      "probe_2_alarm_control": {
+        "name": "Vleesprobe 2 alarm instellen (experimenteel)"
+      },
+      "probe_3_alarm_control": {
+        "name": "Vleesprobe 3 alarm instellen (experimenteel)"
+      }
+    },
+    "select": {
+      "temperature_unit_control": {
+        "name": "Temperatuureenheid instellen (experimenteel)"
+      }
+    },
+    "switch": {
+      "fan_control": {
+        "name": "Ventilator bediening (experimenteel)"
+      },
+      "wifi_control": {
+        "name": "Wi-Fi bediening (experimenteel)"
+      }
     }
   }
 }

@@ -7,10 +7,14 @@ import struct
 import pytest
 
 from custom_components.inkbird_bbq.devices.int14bw import (
+    build_auto_sleep_write,
+    build_brightness_write,
     build_challenge_request,
     build_clock_sync,
     build_settings_read_requests,
+    build_temperature_unit_write,
     build_verify_response,
+    build_wifi_mode_write,
     crc8_cdma2000,
     crc8_dvb_s2,
     decode_temperatures,
@@ -147,3 +151,35 @@ def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
 
     assert parse_target_report(bytes.fromhex("03 10 e4 02 00 00 05 00")) is None
     assert parse_target_report(bytes.fromhex("02 10 e4")) is None
+
+
+
+def test_experimental_setting_write_builders() -> None:
+    assert build_temperature_unit_write("C") == bytes.fromhex("02 03 43")
+    assert build_temperature_unit_write("F") == bytes.fromhex("02 03 46")
+    assert build_brightness_write(50) == bytes.fromhex("02 05 32")
+    assert build_wifi_mode_write(True) == bytes.fromhex("02 12 01")
+    assert build_wifi_mode_write(False) == bytes.fromhex("02 12 00")
+    assert build_auto_sleep_write(0) == bytes.fromhex("04 40 00 00 00")
+    assert build_auto_sleep_write(5) == bytes.fromhex("04 40 01 2c 01")
+
+
+@pytest.mark.parametrize(
+    ("builder", "value"),
+    [
+        (build_brightness_write, -1),
+        (build_brightness_write, 101),
+        (build_auto_sleep_write, -1),
+        (build_auto_sleep_write, 1093),
+    ],
+)
+def test_experimental_setting_write_builders_reject_invalid_values(
+    builder, value: int
+) -> None:
+    with pytest.raises(ValueError):
+        builder(value)
+
+
+def test_temperature_unit_write_rejects_unknown_unit() -> None:
+    with pytest.raises(ValueError):
+        build_temperature_unit_write("K")

@@ -260,3 +260,43 @@ def parse_target_report(payload: bytes) -> Int14bwTargetReport | None:
         doneness=payload[6],
         food_code=payload[7],
     )
+
+
+def build_temperature_unit_write(unit: str) -> bytes:
+    """Build FF02 temperature-unit write for a controlled hardware test."""
+    normalized = unit.upper()
+    if normalized not in {"C", "F"}:
+        raise ValueError("Temperature unit must be C or F")
+    return bytes((0x02, 0x03, ord(normalized)))
+
+
+def build_brightness_write(percent: int) -> bytes:
+    """Build FF02 display-brightness write."""
+    if not 0 <= percent <= 100:
+        raise ValueError("Brightness must be between 0 and 100")
+    return bytes((0x02, 0x05, percent))
+
+
+def build_wifi_mode_write(enabled: bool) -> bytes:
+    """Build FF02 Wi-Fi enable/disable write."""
+    return bytes((0x02, 0x12, 0x01 if enabled else 0x00))
+
+
+def build_auto_sleep_write(minutes: int) -> bytes:
+    """Build FF02 auto-sleep write; zero minutes disables auto-sleep."""
+    if not 0 <= minutes <= 1092:
+        raise ValueError("Auto-sleep must be between 0 and 1092 minutes")
+
+    if minutes == 0:
+        return bytes.fromhex("04 40 00 00 00")
+
+    seconds = minutes * 60
+    return bytes(
+        (
+            0x04,
+            0x40,
+            0x01,
+            seconds & 0xFF,
+            (seconds >> 8) & 0xFF,
+        )
+    )

@@ -8,6 +8,9 @@ import pytest
 
 from custom_components.inkbird_bbq.devices.isc027bw import (
     InvalidFrameError,
+    build_fan_control_frame,
+    build_target_control_frame,
+    celsius_to_fahrenheit10,
     crc16_modbus,
     decode_targets,
     decode_telemetry,
@@ -87,3 +90,35 @@ def test_bad_length_is_rejected() -> None:
     """Unexpected frame lengths must be rejected."""
     with pytest.raises(InvalidFrameError):
         decode_telemetry(bytes(19))
+
+
+
+def test_build_fan_control_frame_preserves_crc_and_sets_values() -> None:
+    current = _frame(bytes(18))
+    updated = build_fan_control_frame(current, fan_on=True, speed=30)
+
+    assert updated[0] == 1
+    assert updated[6] == 30
+    assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
+
+
+def test_build_target_control_frame_sets_pit_and_probe_alarm() -> None:
+    current = _frame(bytes(18))
+    updated = build_target_control_frame(
+        current,
+        pit_target=110.0,
+        probe_alarms={1: 75.0},
+    )
+
+    assert struct.unpack_from("<H", updated, 0)[0] == 2300
+    assert struct.unpack_from("<H", updated, 4)[0] == 1670
+    assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
+
+
+def test_control_temperature_encoder_bounds() -> None:
+    assert celsius_to_fahrenheit10(20.0) == 680
+    assert celsius_to_fahrenheit10(300.0) == 5720
+    with pytest.raises(ValueError):
+        celsius_to_fahrenheit10(19.9)
+    with pytest.raises(ValueError):
+        celsius_to_fahrenheit10(300.1)

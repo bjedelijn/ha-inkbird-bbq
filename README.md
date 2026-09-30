@@ -63,9 +63,11 @@ The development branch already contains:
 - model-specific persistent Bluetooth coordinators with reconnect handling;
 - a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
 - read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
+- disabled-by-default experimental ISC-027BW controls for fan on/off, fan setpoint, pit target and three probe alarm targets, with fresh-frame read/modify/write and immediate readback;
 - INT-14-BW challenge/response authentication, clock sync, current-state requests and safe read-only settings queries;
 - read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
-- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; setting reads are sent as individual FF02 GATT writes for Bluetooth-proxy/MTU compatibility; target-temperature reports are captured in diagnostics but remain raw until their C/F scaling is confirmed on the physical device;
+- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; setting reads use individual FF02 requests plus FF02 characteristic readback/retry because the first physical tests did not return these values through notifications;
+- disabled-by-default experimental INT-14-BW controls for C/F, display brightness, Wi-Fi enabled state and auto-sleep; target-temperature writes remain disabled because their C/F scaling boundary is still unresolved;
 - protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
 - Bluetooth reconnect-loop tests cover missing devices, session failures, disconnect cleanup and cancellation;
 - English base strings plus an initial Dutch Home Assistant translation;
@@ -77,7 +79,9 @@ The first physical INT-14-BW has now been detected and connected through the Oli
 
 The first physical ISC-027BW has now been detected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. Read-only GATT telemetry still needs live validation before enabling any control writes.
 
-Physical hardware validation is still required before enabling ISC-027BW control writes.
+The first physical ISC-027BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. The read-only GATT path is working: fan state/output and target/alarm values have been read from the physical controller. Live temperature/probe behavior and reconnect still need further validation.
+
+Physical hardware validation is still required before experimental ISC-027BW controls can be considered production-ready.
 
 ## Development installation and updates
 
@@ -99,11 +103,11 @@ Public reverse-engineering references and protocol notes are tracked in [docs/PR
 4. Validate reconnect, availability and diagnostics handling through the ESPHome Bluetooth proxy.
 5. Confirm app/Wi-Fi/Apple Watch coexistence behavior.
 6. Add TNT-11-B support after identifying its actual BLE advertisement and protocol family.
-7. Add ISC-027BW controls only after read-only operation is stable and write commands are validated safely.
+7. Validate the disabled-by-default experimental ISC-027BW and INT-14-BW controls on physical hardware before enabling any control by default.
 
 ## Safety
 
-The ISC-027BW controls combustion airflow. Early versions will remain read-only. Fan/setpoint writes will only be enabled after protocol validation and fail-safe behavior are implemented.
+The ISC-027BW controls combustion airflow. Experimental write entities are present only for bench validation and are disabled by default in Home Assistant. Do not test fan controls on a live fire. Production use of fan/setpoint writes requires completed protocol validation, readback checks and fail-safe behavior. INT-14-BW target-temperature writes remain disabled until their scaling is physically verified.
 
 ## Changelog
 

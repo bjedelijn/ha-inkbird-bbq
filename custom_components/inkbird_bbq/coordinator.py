@@ -20,10 +20,14 @@ from .devices.int14bw import (
     CHAR_CONTROL,
     CHAR_STATE,
     CHAR_TEMPERATURE,
+    build_auto_sleep_write,
+    build_brightness_write,
     build_challenge_request,
     build_clock_sync,
     build_settings_read_requests,
+    build_temperature_unit_write,
     build_verify_response,
+    build_wifi_mode_write,
     decode_temperatures,
     parse_auto_sleep_minutes,
     parse_battery,
@@ -37,6 +41,8 @@ from .devices.isc027bw import (
     CHAR_FAN,
     CHAR_TARGETS,
     CHAR_TELEMETRY,
+    build_fan_control_frame,
+    build_target_control_frame,
     decode_targets,
     decode_telemetry,
 )
@@ -46,6 +52,13 @@ _LOGGER = logging.getLogger(__name__)
 _INT14_CURRENT_INFO_REQUEST = bytes.fromhex(
     "02 f1 01 02 f1 03 02 f1 19"
 )
+_INT14_SETTINGS_KEYS = (
+    "temperature_unit",
+    "display_brightness",
+    "wifi_enabled",
+    "auto_sleep_minutes",
+)
+_INT14_SETTINGS_RETRY_SECONDS = 30.0
 
 
 class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -75,6 +88,8 @@ class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._stop = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
+        self._client: BleakClient | None = None
+        self._io_lock = asyncio.Lock()
         self.data = {
             "model": model,
             "address": self.address,
@@ -115,6 +130,13 @@ class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self.data.get("available") != available:
             self._publish(available=available)
 
+    def _require_client(self) -> BleakClient:
+        """Return the active BLE client for an explicit control operation."""
+        client = self._client
+        if client is None or not client.is_connected:
+            raise RuntimeError(f"{self.model} is not connected")
+        return client
+
 
 class Isc027bwCoordinator(InkbirdBbqCoordinator):
     """Read-only ISC-027BW coordinator."""
@@ -126,27 +148,33 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             model=MODEL_ISC_027BW,
             address=address,
         )
+        self._fff1_current: bytes | None = None
+        self._fff3_current: bytes | None = None
 
     async def _session(self, client: BleakClient) -> None:
+        self._client = client
         self._set_available(True)
 
         async def _read_once() -> None:
-            telemetry_raw = bytes(await client.read_gatt_char(CHAR_TELEMETRY))
-            values = self._decode_telemetry_values(telemetry_raw)
+            async with self._io_lock:
+                telemetry_raw = bytes(await client.read_gatt_char(CHAR_TELEMETRY))
+                values = self._decode_telemetry_values(telemetry_raw)
 
-            try:
-                targets_raw = bytes(await client.read_gatt_char(CHAR_TARGETS))
-                values.update(self._decode_target_values(targets_raw))
-            except Exception as err:  # noqa: BLE001 - optional read path
-                _LOGGER.debug("ISC-027BW FFF3 read failed: %s", err)
+                try:
+                    targets_raw = bytes(await client.read_gatt_char(CHAR_TARGETS))
+                    values.update(self._decode_target_values(targets_raw))
+                    self._fff3_current = targets_raw
+                except Exception as err:  # noqa: BLE001 - optional read path
+                    _LOGGER.debug("ISC-027BW FFF3 read failed: %s", err)
 
-            try:
-                fan_raw = bytes(await client.read_gatt_char(CHAR_FAN))
-                values.update(self._decode_fan_values(fan_raw))
-            except Exception as err:  # noqa: BLE001 - optional read path
-                _LOGGER.debug("ISC-027BW FFF1 read failed: %s", err)
+                try:
+                    fan_raw = bytes(await client.read_gatt_char(CHAR_FAN))
+                    values.update(self._decode_fan_values(fan_raw))
+                    self._fff1_current = fan_raw
+                except Exception as err:  # noqa: BLE001 - optional read path
+                    _LOGGER.debug("ISC-027BW FFF1 read failed: %s", err)
 
-            self._publish(**values)
+                self._publish(**values)
 
         while client.is_connected and not self._stop.is_set():
             await _read_once()
@@ -155,6 +183,7 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             except TimeoutError:
                 pass
 
+        self._client = None
         self._set_available(False)
 
     @staticmethod
@@ -182,10 +211,71 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
     @staticmethod
     def _decode_fan_values(data: bytes) -> dict[str, Any]:
-        """Decode the safe read-only fan state from FFF1."""
+        """Decode fan state and configured fan setpoint from FFF1."""
         if not data:
             return {}
-        return {"fan_on": bool(data[0])}
+        values: dict[str, Any] = {"fan_on": bool(data[0])}
+        if len(data) > 6 and data[6] <= 100:
+            values["fan_setpoint"] = data[6]
+        return values
+
+    async def async_set_fan_on(self, fan_on: bool) -> None:
+        """Experimentally set ISC-027BW fan on/off and verify by readback."""
+        client = self._require_client()
+        async with self._io_lock:
+            current = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = current
+            self._publish(**self._decode_fan_values(current))
+            frame = build_fan_control_frame(current, fan_on=fan_on)
+            await client.write_gatt_char(CHAR_FAN, frame, response=True)
+            await asyncio.sleep(0.25)
+            readback = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = readback
+            self._publish(**self._decode_fan_values(readback))
+
+    async def async_set_fan_setpoint(self, speed: int) -> None:
+        """Experimentally set ISC-027BW fan setpoint and verify by readback."""
+        client = self._require_client()
+        async with self._io_lock:
+            current = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = current
+            self._publish(**self._decode_fan_values(current))
+            frame = build_fan_control_frame(current, speed=speed)
+            await client.write_gatt_char(CHAR_FAN, frame, response=True)
+            await asyncio.sleep(0.25)
+            readback = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = readback
+            self._publish(**self._decode_fan_values(readback))
+
+    async def async_set_pit_target(self, value: float) -> None:
+        """Experimentally set ISC-027BW pit target and verify by readback."""
+        await self._async_set_target(pit_target=value)
+
+    async def async_set_probe_alarm(self, probe: int, value: float) -> None:
+        """Experimentally set an ISC-027BW probe alarm and verify by readback."""
+        await self._async_set_target(probe_alarms={probe: value})
+
+    async def _async_set_target(
+        self,
+        *,
+        pit_target: float | None = None,
+        probe_alarms: dict[int, float] | None = None,
+    ) -> None:
+        client = self._require_client()
+        async with self._io_lock:
+            current = bytes(await client.read_gatt_char(CHAR_TARGETS))
+            self._fff3_current = current
+            self._publish(**self._decode_target_values(current))
+            frame = build_target_control_frame(
+                current,
+                pit_target=pit_target,
+                probe_alarms=probe_alarms,
+            )
+            await client.write_gatt_char(CHAR_TARGETS, frame, response=True)
+            await asyncio.sleep(0.25)
+            readback = bytes(await client.read_gatt_char(CHAR_TARGETS))
+            self._fff3_current = readback
+            self._publish(**self._decode_target_values(readback))
 
 
 class Int14bwCoordinator(InkbirdBbqCoordinator):
@@ -204,6 +294,7 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         self._docked = [False] * 4
 
     async def _session(self, client: BleakClient) -> None:
+        self._client = client
         self._challenge = None
         self._challenge_event.clear()
         self._auth_event.clear()
@@ -245,15 +336,8 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             build_clock_sync(),
             response=False,
         )
-        await asyncio.sleep(0.2)
-        for request in build_settings_read_requests():
-            _LOGGER.debug("INT-14-BW settings read request: %s", request.hex())
-            await client.write_gatt_char(
-                CHAR_CONTROL,
-                request,
-                response=False,
-            )
-            await asyncio.sleep(0.15)
+        await asyncio.sleep(0.5)
+        await self._async_read_settings(client)
         await client.write_gatt_char(
             CHAR_CONTROL,
             _INT14_CURRENT_INFO_REQUEST,
@@ -261,24 +345,131 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
         )
 
         self._set_available(True)
+        last_settings_attempt = asyncio.get_running_loop().time()
 
         while client.is_connected and not self._stop.is_set():
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=10)
             except TimeoutError:
+                async with self._io_lock:
+                    await client.write_gatt_char(
+                        CHAR_CONTROL,
+                        _INT14_CURRENT_INFO_REQUEST,
+                        response=False,
+                    )
+
+                now = asyncio.get_running_loop().time()
+                settings_missing = any(
+                    key not in self.data for key in _INT14_SETTINGS_KEYS
+                )
+                if (
+                    settings_missing
+                    and now - last_settings_attempt >= _INT14_SETTINGS_RETRY_SECONDS
+                ):
+                    await self._async_read_settings(client)
+                    last_settings_attempt = now
+
+        self._client = None
+        self._set_available(False)
+
+    async def _async_read_settings(self, client: BleakClient) -> None:
+        """Request INT-14-BW settings and try FF02 readback after each request."""
+        async with self._io_lock:
+            for request in build_settings_read_requests():
+                _LOGGER.debug("INT-14-BW settings read request: %s", request.hex())
                 await client.write_gatt_char(
                     CHAR_CONTROL,
-                    _INT14_CURRENT_INFO_REQUEST,
+                    request,
                     response=False,
                 )
+                await asyncio.sleep(0.25)
 
-        self._set_available(False)
+                try:
+                    raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+                except Exception as err:  # noqa: BLE001 - optional readback path
+                    _LOGGER.debug(
+                        "INT-14-BW FF02 readback failed after %s: %s",
+                        request.hex(),
+                        err,
+                    )
+                else:
+                    if raw:
+                        _LOGGER.debug(
+                            "INT-14-BW FF02 readback after %s: %s",
+                            request.hex(),
+                            raw.hex(),
+                        )
+                        self._on_control(None, bytearray(raw))
+
+    async def _async_write_setting(
+        self,
+        command: bytes,
+        report_request: bytes,
+    ) -> None:
+        """Write one experimental INT-14-BW setting and force a readback."""
+        client = self._require_client()
+        async with self._io_lock:
+            _LOGGER.debug("INT-14-BW setting write: %s", command.hex())
+            await client.write_gatt_char(CHAR_CONTROL, command, response=False)
+            await asyncio.sleep(0.25)
+            await client.write_gatt_char(
+                CHAR_CONTROL,
+                report_request,
+                response=False,
+            )
+            await asyncio.sleep(0.25)
+
+            try:
+                raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+            except Exception as err:  # noqa: BLE001 - optional readback path
+                _LOGGER.debug(
+                    "INT-14-BW FF02 setting readback failed after %s: %s",
+                    command.hex(),
+                    err,
+                )
+            else:
+                if raw:
+                    _LOGGER.debug(
+                        "INT-14-BW FF02 setting readback after %s: %s",
+                        command.hex(),
+                        raw.hex(),
+                    )
+                    self._on_control(None, bytearray(raw))
+
+    async def async_set_temperature_unit(self, unit: str) -> None:
+        """Experimentally set C/F on the INT-14-BW."""
+        await self._async_write_setting(
+            build_temperature_unit_write(unit),
+            bytes.fromhex("01 04"),
+        )
+
+    async def async_set_display_brightness(self, percent: int) -> None:
+        """Experimentally set display brightness on the INT-14-BW."""
+        await self._async_write_setting(
+            build_brightness_write(percent),
+            bytes.fromhex("01 06"),
+        )
+
+    async def async_set_wifi_enabled(self, enabled: bool) -> None:
+        """Experimentally set INT-14-BW Wi-Fi enabled state."""
+        await self._async_write_setting(
+            build_wifi_mode_write(enabled),
+            bytes.fromhex("01 42"),
+        )
+
+    async def async_set_auto_sleep_minutes(self, minutes: int) -> None:
+        """Experimentally set INT-14-BW auto-sleep; zero disables it."""
+        await self._async_write_setting(
+            build_auto_sleep_write(minutes),
+            bytes.fromhex("01 41"),
+        )
 
     def _on_control(
         self,
         _characteristic: BleakGATTCharacteristic | None,
         data: bytearray,
     ) -> None:
+        _LOGGER.debug("INT-14-BW FF02 RX: %s", bytes(data).hex())
         try:
             frames = parse_ff02_frames(bytes(data))
         except ValueError as err:

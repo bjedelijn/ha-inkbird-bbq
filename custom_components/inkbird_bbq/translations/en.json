@@ -116,6 +116,42 @@
       "wifi_enabled": {
         "name": "Wi-Fi enabled"
       }
+    },
+    "number": {
+      "display_brightness_control": {
+        "name": "Set display brightness (experimental)"
+      },
+      "auto_sleep_control": {
+        "name": "Set auto sleep (experimental)"
+      },
+      "fan_setpoint_control": {
+        "name": "Set fan power (experimental)"
+      },
+      "pit_target_control": {
+        "name": "Set pit target (experimental)"
+      },
+      "probe_1_alarm_control": {
+        "name": "Set meat probe 1 alarm (experimental)"
+      },
+      "probe_2_alarm_control": {
+        "name": "Set meat probe 2 alarm (experimental)"
+      },
+      "probe_3_alarm_control": {
+        "name": "Set meat probe 3 alarm (experimental)"
+      }
+    },
+    "select": {
+      "temperature_unit_control": {
+        "name": "Set temperature unit (experimental)"
+      }
+    },
+    "switch": {
+      "fan_control": {
+        "name": "Fan control (experimental)"
+      },
+      "wifi_control": {
+        "name": "Wi-Fi control (experimental)"
+      }
     }
   }
 }

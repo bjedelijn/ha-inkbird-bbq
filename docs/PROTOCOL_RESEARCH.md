@@ -123,11 +123,22 @@ The current driver successfully establishes a live session and exposes:
 - core and ambient temperature after a probe is removed from the dock;
 - safe read-only FF02 settings queries for temperature unit, brightness, Wi-Fi mode and auto-sleep.
 
-The first live settings test produced Home Assistant entities but no values. The initial implementation sent the read frames as one combined FF02 write. The implementation now sends each read request separately with a short delay to avoid depending on a large negotiated GATT write size/MTU through the ESPHome proxy. This still requires physical confirmation.
+The first live settings test produced Home Assistant entities but no values. A second test with individual FF02 requests still left the settings unavailable. The driver now also performs an FF02 characteristic readback after each request, retries missing settings every 30 seconds and logs raw FF02 RX/readback frames at debug level. This still requires physical confirmation.
 
 The driver also requests target-temperature reports for all four probes. Their structural fields are decoded and retained as raw values for diagnostics, but the target is not yet exposed as a Home Assistant temperature entity because the public research leaves the C/F target scaling boundary unresolved. No settings writes are enabled.
 
 During the first live test, all four dock states matched the physical charging station. Removing probe 1 changed the dock state and produced 23.0 °C for both core and ambient at room temperature, while docked probes remained unavailable.
+
+### Experimental setting writes
+
+For controlled bench testing, disabled-by-default Home Assistant controls are implemented for:
+
+- C/F unit (`03`, read/report `04`);
+- display brightness (`05`, report `06`);
+- Wi-Fi enabled state (`12`, report `42`);
+- auto-sleep (`40`, report `41`).
+
+Each write is followed by a report request and FF02 readback attempt. Target-temperature and volume writes remain intentionally disabled until their unresolved semantics are physically confirmed.
 
 ### Validation required
 

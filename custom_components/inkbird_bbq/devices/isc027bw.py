@@ -115,3 +115,64 @@ def decode_targets(data: bytes) -> Isc027bwTargets:
             struct.unpack_from("<H", data, 8)[0]
         ),
     )
+
+
+def celsius_to_fahrenheit10(value: float) -> int:
+    """Encode a controlled-test target in Fahrenheit x10.
+
+    The public controller implementation uses 20-300 C as its writable range.
+    """
+    if not 20.0 <= value <= 300.0:
+        raise ValueError("Temperature target must be between 20 and 300 C")
+    return round((value * 9.0 / 5.0 + 32.0) * 10.0)
+
+
+def build_fan_control_frame(
+    current: bytes,
+    *,
+    fan_on: bool | None = None,
+    speed: int | None = None,
+) -> bytes:
+    """Build an FFF1 control frame while preserving unknown bytes."""
+    validate_frame(current)
+    payload = bytearray(current)
+
+    if fan_on is not None:
+        payload[0] = 1 if fan_on else 0
+
+    if speed is not None:
+        if not 0 <= speed <= 100:
+            raise ValueError("Fan speed must be between 0 and 100")
+        payload[6] = speed
+
+    struct.pack_into("<H", payload, CRC_DATA_LENGTH, crc16_modbus(payload[:CRC_DATA_LENGTH]))
+    return bytes(payload)
+
+
+def build_target_control_frame(
+    current: bytes,
+    *,
+    pit_target: float | None = None,
+    probe_alarms: dict[int, float] | None = None,
+) -> bytes:
+    """Build an FFF3 target/alarm frame while preserving unknown bytes."""
+    validate_frame(current)
+    payload = bytearray(current)
+
+    if pit_target is not None:
+        struct.pack_into("<H", payload, 0, celsius_to_fahrenheit10(pit_target))
+
+    if probe_alarms:
+        offsets = {1: 4, 2: 6, 3: 8}
+        for probe, value in probe_alarms.items():
+            if probe not in offsets:
+                raise ValueError("Probe alarm index must be 1, 2 or 3")
+            struct.pack_into(
+                "<H",
+                payload,
+                offsets[probe],
+                celsius_to_fahrenheit10(value),
+            )
+
+    struct.pack_into("<H", payload, CRC_DATA_LENGTH, crc16_modbus(payload[:CRC_DATA_LENGTH]))
+    return bytes(payload)
