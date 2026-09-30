@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from custom_components.inkbird_bbq.const import (
     MODEL_INT_14_BW,
     MODEL_ISC_027BW,
