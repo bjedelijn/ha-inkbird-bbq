@@ -10,7 +10,6 @@ from custom_components.inkbird_bbq.devices.int14bw import (
     build_brightness_write,
     build_challenge_request,
     build_clock_sync,
-    build_settings_read_requests,
     build_temperature_unit_write,
     build_verify_response,
     crc8_cdma2000,
