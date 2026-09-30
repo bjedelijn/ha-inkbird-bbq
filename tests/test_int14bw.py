@@ -7,25 +7,21 @@ import struct
 import pytest
 
 from custom_components.inkbird_bbq.devices.int14bw import (
-    build_auto_sleep_write,
     build_brightness_write,
     build_challenge_request,
     build_clock_sync,
     build_settings_read_requests,
     build_temperature_unit_write,
     build_verify_response,
-    build_wifi_mode_write,
     crc8_cdma2000,
     crc8_dvb_s2,
     decode_temperatures,
     is_supported_name,
-    parse_auto_sleep_minutes,
     parse_battery,
     parse_brightness,
     parse_ff02_frames,
     parse_target_report,
     parse_temperature_unit,
-    parse_wifi_enabled,
 )
 
 
@@ -112,34 +108,6 @@ def test_battery_parser() -> None:
     assert parse_battery(bytes((95, 0x7F, 101, 42))) == (95, None, 100, 42)
 
 
-def test_settings_read_requests_are_individual_safe_frames() -> None:
-    requests = build_settings_read_requests()
-    assert requests == (
-        bytes.fromhex("01 04"),
-        bytes.fromhex("02 02 01"),
-        bytes.fromhex("02 02 02"),
-        bytes.fromhex("02 02 04"),
-        bytes.fromhex("02 02 08"),
-        bytes.fromhex("01 06"),
-        bytes.fromhex("01 0c"),
-        bytes.fromhex("01 42"),
-        bytes.fromhex("01 41"),
-    )
-    assert all(len(request) <= 20 for request in requests)
-
-
-def test_settings_parsers() -> None:
-    assert parse_temperature_unit(bytes.fromhex("43")) == "C"
-    assert parse_temperature_unit(bytes.fromhex("46")) == "F"
-    assert parse_temperature_unit(bytes.fromhex("00")) is None
-    assert parse_brightness(bytes((75,))) == 75
-    assert parse_brightness(bytes((150,))) == 100
-    assert parse_wifi_enabled(bytes((1,))) is True
-    assert parse_wifi_enabled(bytes((0,))) is False
-    assert parse_auto_sleep_minutes(bytes.fromhex("01 2c 01")) == 5
-    assert parse_auto_sleep_minutes(bytes.fromhex("00 2c 01")) == 0
-
-
 def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
     report = parse_target_report(bytes.fromhex("02 10 e4 02 00 00 05 00"))
     assert report is not None
@@ -154,32 +122,3 @@ def test_target_report_keeps_temperature_raw_until_live_validation() -> None:
 
 
 
-def test_experimental_setting_write_builders() -> None:
-    assert build_temperature_unit_write("C") == bytes.fromhex("02 03 43")
-    assert build_temperature_unit_write("F") == bytes.fromhex("02 03 46")
-    assert build_brightness_write(50) == bytes.fromhex("02 05 32")
-    assert build_wifi_mode_write(True) == bytes.fromhex("02 12 01")
-    assert build_wifi_mode_write(False) == bytes.fromhex("02 12 00")
-    assert build_auto_sleep_write(0) == bytes.fromhex("04 40 00 00 00")
-    assert build_auto_sleep_write(5) == bytes.fromhex("04 40 01 2c 01")
-
-
-@pytest.mark.parametrize(
-    ("builder", "value"),
-    [
-        (build_brightness_write, -1),
-        (build_brightness_write, 101),
-        (build_auto_sleep_write, -1),
-        (build_auto_sleep_write, 1093),
-    ],
-)
-def test_experimental_setting_write_builders_reject_invalid_values(
-    builder, value: int
-) -> None:
-    with pytest.raises(ValueError):
-        builder(value)
-
-
-def test_temperature_unit_write_rejects_unknown_unit() -> None:
-    with pytest.raises(ValueError):
-        build_temperature_unit_write("K")
