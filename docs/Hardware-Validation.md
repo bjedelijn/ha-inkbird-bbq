@@ -166,10 +166,15 @@ Additional physical validation:
 - removing probe 2 correctly changes probe 2 to undocked;
 - probe 2 reported 27.0 °C core and 24.0 °C ambient during the test, confirming separate core/ambient offsets and probe 2 channel mapping.
 
+Additional physical validation:
+
+- probe 3 undock/dock state is mapped correctly and reported 24.0 °C core / 24.0 °C ambient while undocked;
+- probe 4 undock/dock state is mapped correctly and reported 24.0 °C core / 24.0 °C ambient while undocked;
+- all four physical probe channels now map to their matching Home Assistant entities.
+
 Still validate:
 
-- probes 3 and 4 individually;
-- deliberately different temperatures on probes 3 and 4 so the remaining channel mapping is unambiguous;
+- deliberately different temperatures on probes 3 and 4 if a final cross-channel stress check is desired;
 - unavailable/sentinel values beyond normal docking behavior.
 
 ### Battery reporting
@@ -185,6 +190,20 @@ Still validate:
 - charging behavior over time;
 - changing battery values;
 - invalid/unknown battery values.
+
+### Connectivity
+
+Confirmed on physical hardware through the Olimex proxy:
+
+- when the INT-14-BW base station was powered off, Home Assistant lost the device data as expected;
+- after the base station was powered back on and resumed Bluetooth advertising, the integration automatically reconnected without manual intervention;
+- battery, dock-state and temperature values resumed after reconnect.
+
+Still validate:
+
+- ESPHome proxy restart recovery;
+- Home Assistant restart recovery;
+- a longer running session.
 
 ### Wi-Fi/app/Watch coexistence
 
