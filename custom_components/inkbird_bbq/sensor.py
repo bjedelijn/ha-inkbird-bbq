@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import callback
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -142,8 +142,6 @@ INT14BW_SENSORS: tuple[InkbirdSensorDescription, ...] = tuple(
             state_class=SensorStateClass.MEASUREMENT,
         )
         for probe in range(1, 5)
-    ]
-    + [
     ]
 )
 
