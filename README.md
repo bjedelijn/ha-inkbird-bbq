@@ -70,10 +70,15 @@ Physically validated through the Olimex Bluetooth proxy:
 - base and probe battery information;
 - automatic reconnect after power cycling the base;
 - simultaneous Home Assistant BLE use and INKBIRD iPhone app monitoring over Wi-Fi;
-- temperature-unit control;
-- display-brightness control.
+- temperature-unit control, including physically confirmed C -> F -> C switching;
+- display-brightness control;
+- probe target writes for all four probes, confirmed against the physical base and INKBIRD app;
+- reconnect after ESPHome Bluetooth Proxy restart;
+- reconnect after Home Assistant restart.
 
-Probe target reports are decoded for all four probes. Hardware observations show that the target value on the wire is Fahrenheit x10 even while Home Assistant exposes the target as Celsius. The integration normalizes these values to Celsius and encodes Celsius setpoints back to the device's Fahrenheit x10 wire representation. Probe-target writes are implemented with readback verification and remain experimental pending a final end-to-end physical write test.
+Probe target reports are decoded for all four probes. The device stores target values as Fahrenheit x10 on the wire. Home Assistant keeps the internal target in Celsius, while the target number entities follow the INT-14-BW's selected display unit: Celsius shows °C and Fahrenheit shows °F. Writes are converted back to the device format and verified by readback.
+
+Temperature unit and display brightness are actively requested after every authenticated connection so those controls populate from the device instead of remaining unknown until first changed.
 
 Older development entities for unsupported Wi-Fi/auto-sleep settings are automatically removed from the Home Assistant entity registry.
 
@@ -149,7 +154,7 @@ Changes are automatically checked with:
 
 The ISC-027BW controls combustion airflow. Do not use experimental fan/control writes as the only safety mechanism for a live fire. Validate changes on the bench first and keep the controller's own safety behavior in place.
 
-INT-14-BW target controls also remain experimental until the current Celsius-to-wire conversion has completed final physical set/readback validation.
+INT-14-BW target conversion, write/readback and C/F behavior have been physically validated. Longer-duration operation remains part of ongoing soak testing.
 
 ## Changelog
 
