@@ -164,3 +164,53 @@ async def test_int14_startup_reads_unit_and_brightness() -> None:
     ]
     assert {"temperature_unit": "C"} in published
     assert {"display_brightness": 50} in published
+
+
+@pytest.mark.asyncio
+async def test_tnt_gatt_diagnostics_reads_only_readable_vendor_characteristics() -> None:
+    from custom_components.inkbird_bbq.coordinator import Tnt11bCoordinator
+    from custom_components.inkbird_bbq.devices.tnt11b import SERVICE_UUID
+
+    coordinator = object.__new__(Tnt11bCoordinator)
+    coordinator.data = {}
+    published: list[dict[str, Any]] = []
+
+    def _publish(**values: Any) -> None:
+        coordinator.data.update(values)
+        published.append(values)
+
+    coordinator._publish = _publish
+
+    readable = MagicMock()
+    readable.uuid = "0000ff05-0000-1000-8000-00805f9b34fb"
+    readable.properties = ["read"]
+
+    write_only = MagicMock()
+    write_only.uuid = "0000ff04-0000-1000-8000-00805f9b34fb"
+    write_only.properties = ["write"]
+
+    other_service_char = MagicMock()
+    other_service_char.uuid = "00002a19-0000-1000-8000-00805f9b34fb"
+    other_service_char.properties = ["read"]
+
+    vendor_service = MagicMock()
+    vendor_service.uuid = SERVICE_UUID
+    vendor_service.characteristics = [readable, write_only]
+
+    other_service = MagicMock()
+    other_service.uuid = "0000180f-0000-1000-8000-00805f9b34fb"
+    other_service.characteristics = [other_service_char]
+
+    client = MagicMock()
+    client.services = [vendor_service, other_service]
+    client.read_gatt_char = AsyncMock(return_value=bytes.fromhex("64"))
+
+    await coordinator._async_collect_gatt_diagnostics(client)
+
+    client.read_gatt_char.assert_awaited_once_with(readable)
+    assert published[-1]["gatt_read_values"] == {
+        readable.uuid: "64"
+    }
+    assert published[-1]["gatt_characteristic_properties"][write_only.uuid] == [
+        "write"
+    ]
