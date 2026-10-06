@@ -167,7 +167,8 @@ async def test_int14_startup_reads_unit_and_brightness() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tnt_gatt_diagnostics_reads_only_readable_vendor_characteristics() -> None:
+async def test_tnt_gatt_diagnostics_reads_only_readable_vendor_characteristics(
+) -> None:
     from custom_components.inkbird_bbq.coordinator import Tnt11bCoordinator
     from custom_components.inkbird_bbq.devices.tnt11b import SERVICE_UUID
 
