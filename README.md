@@ -2,112 +2,154 @@
 
 Local Home Assistant integration for INKBIRD BBQ controllers and wireless meat thermometers.
 
-> **Development status:** early development. Do not rely on this integration for temperature or fan control yet.
+> **Development status:** pre-release. The integration is already usable for hardware testing, but safety-relevant write controls are still considered experimental.
 
-## Initial hardware scope
+## Supported hardware
 
-- INKBIRD ISC-027BW smoker/kamado fan controller
-- INKBIRD INT-14-BW wireless meat thermometer
-- INKBIRD TNT-11-B wireless meat thermometer *(planned; protocol validation pending)*
+Current model support:
 
-The goal is local Bluetooth communication through Home Assistant's Bluetooth stack, including ESPHome Bluetooth proxies. No cloud dependency is planned for normal Home Assistant operation.
+- **INKBIRD ISC-027BW** smoker/kamado fan controller
+- **INKBIRD INT-14-BW** wireless four-probe meat thermometer
+- **INKBIRD TNT-11-B / BG-BT1W** wireless meat thermometer
+
+The integration uses Home Assistant's native Bluetooth stack and works with local Bluetooth adapters as well as ESPHome Bluetooth proxies. Normal operation is local and does not require the INKBIRD cloud.
+
+## Installation with HACS
+
+The repository contains a valid \`hacs.json\` and passes the official HACS Validation workflow.
+
+Until a stable tagged release is published, install it as a **custom HACS repository**:
+
+1. Open HACS in Home Assistant.
+2. Add \`https://github.com/bjedelijn/ha-inkbird-bbq\` as a custom repository with category **Integration**.
+3. Download **INKBIRD BBQ**.
+4. Restart Home Assistant when HACS requests it.
+5. Add the discovered INKBIRD device from **Settings -> Devices & services**.
+
+The repository is still pre-release software. HACS currently follows the development version on \`main\`; a stable release/tag will be added later.
 
 ## Bluetooth proxy recommendation
 
-This integration is designed to use Home Assistant's native Bluetooth stack. A local Bluetooth adapter works, but for a fixed BBQ/kamado setup a dedicated ESPHome Bluetooth proxy is recommended.
-
-Recommended hardware:
+For a fixed BBQ/kamado setup, the reference test setup is:
 
 - **Olimex ESP32-POE-ISO-EA**
 - **BOX-ESP32-POE-ISO-EA-F** enclosure
-- Ethernet/PoE connection to the Home Assistant network
-- ESPHome Bluetooth Proxy firmware with active Bluetooth connections enabled
+- Ethernet/PoE
+- external 2.4 GHz antenna
+- ESPHome Bluetooth Proxy with active Bluetooth connections enabled
 
-Why this hardware is recommended:
+Ethernet avoids sharing an ESP32 radio between Wi-Fi and Bluetooth, PoE gives a simple fixed installation, and Home Assistant can automatically route BLE connections through the proxy.
 
-- Ethernet avoids sharing the ESP32 radio between Wi-Fi and Bluetooth.
-- PoE provides a simple, reliable fixed installation.
-- The `-EA` version uses an external antenna, which is useful when the proxy is mounted indoors and the BBQ is outside.
-- Home Assistant can automatically route BLE connections through an ESPHome Bluetooth proxy, so the integration itself does not need proxy-specific code.
+## Current hardware status
 
-The proxy should be mounted indoors or in a suitable weatherproof enclosure, reasonably close to the BBQ area and away from access points, switches and other strong RF sources where practical.
+### ISC-027BW
 
-## Coexistence with the INKBIRD app and Apple Watch
+Physically validated through the Olimex Bluetooth proxy:
 
-The integration is intentionally Bluetooth-first while leaving the device's Wi-Fi functionality untouched.
+- discovery as \`S27\` with service FFF0;
+- pit temperature and three wired meat-probe temperatures;
+- fan running state and actual fan output;
+- pit target and three probe alarm targets;
+- fan on/off write;
+- pit-target write;
+- probe-alarm writes;
+- immediate GATT readback after writes;
+- automatic controller behavior that disables the fan when the grill/pit probe is absent.
 
-Expected usage for Wi-Fi capable models:
+Fan output is controlled automatically by the ISC-027BW and is therefore exposed as a measured value, not as a user-settable fan-power percentage.
 
-- Home Assistant keeps the local BLE connection through the local adapter or ESPHome Bluetooth proxy.
-- The INKBIRD mobile app uses the device's Wi-Fi/cloud path for remote monitoring.
-- A phone app must not compete with Home Assistant for the same single active BLE connection.
-- For the INT-14-BW, INKBIRD documents Wi-Fi, Bluetooth and Apple Watch monitoring. Community testing also indicates the base can expose a combined Wi-Fi + Bluetooth radio mode.
-- The ISC-027BW officially supports both Wi-Fi and Bluetooth. Apple Watch behavior for this specific model still needs hardware/app validation.
+### INT-14-BW
 
-This coexistence model is a development goal, not yet a guaranteed feature. It will be tested on the physical devices before release.
+Physically validated through the Olimex Bluetooth proxy:
 
-## Language policy
+- discovery as \`INT-14-BW_WH\`;
+- challenge/response authentication and persistent BLE session;
+- four probe dock states;
+- four core temperatures;
+- four ambient temperatures;
+- base and probe battery information;
+- automatic reconnect after power cycling the base;
+- simultaneous Home Assistant BLE use and INKBIRD iPhone app monitoring over Wi-Fi;
+- temperature-unit control;
+- display-brightness control.
 
-English is the base language for code, documentation, entity names, comments, strings, issues, pull requests, and release notes. Dutch Home Assistant translations are maintained alongside the English strings where practical.
+Probe target reports are decoded for all four probes. Hardware observations show that the target value on the wire is Fahrenheit x10 even while Home Assistant exposes the target as Celsius. The integration normalizes these values to Celsius and encodes Celsius setpoints back to the device's Fahrenheit x10 wire representation. Probe-target writes are implemented with readback verification and remain experimental pending a final end-to-end physical write test.
 
-## Development policy
+Older development entities for unsupported Wi-Fi/auto-sleep settings are automatically removed from the Home Assistant entity registry.
 
-The README should be kept up to date with every meaningful change that affects supported hardware, behavior, setup, architecture, safety, roadmap, or installation.
+### TNT-11-B / BG-BT1W
 
-## Current implementation status
+Physically discovered and connected through Home Assistant:
 
-The development branch already contains:
+- BLE local name \`BG-BT1W\`;
+- model mapped to \`TNT-11-B\`;
+- notifications received on FF03;
+- live probe temperature exposed in Home Assistant;
+- confirmed physical notification \`19 00 18 71\` decodes to **25 °C** from the first signed little-endian 16-bit field.
 
-- a shared Home Assistant Bluetooth connection layer designed for local adapters and ESPHome Bluetooth proxies;
-- automatic Bluetooth discovery for ISC-027BW and INT-14-BW using confirmed BLE names, including the physically observed `S27` and `INT-14-BW_WH` advertisements;
-- model-specific persistent Bluetooth coordinators with reconnect handling;
-- a read-only ISC-027BW decoder with frame-length and CRC16-Modbus validation;
-- read-only ISC-027BW entities for pit temperature, three wired meat probes, fan output, fan running state and configured target/alarm temperatures;
-- disabled-by-default experimental ISC-027BW controls for fan on/off, pit target and three probe alarm targets, with fresh-frame read/modify/write and immediate readback; fan power is reported as actual automatic output and is not user-adjustable;
-- INT-14-BW challenge/response authentication, clock sync, current-state requests and safe read-only settings queries;
-- read-only INT-14-BW entities for four core temperatures, four ambient temperatures, dock/charging state and available battery information;
-- read-only INT-14-BW settings for temperature unit, display brightness, Wi-Fi enabled state and auto-sleep time; setting reads use individual FF02 requests plus FF02 characteristic readback/retry because the first physical tests did not return these values through notifications;
-- disabled-by-default experimental INT-14-BW controls for C/F, display brightness, Wi-Fi enabled state and auto-sleep; target-temperature writes remain disabled because their C/F scaling boundary is still unresolved;
-- protocol unit tests, including a published INT-14-BW authentication test vector;\n- config-flow model matching and coordinator callback tests for discovery, authentication, probe mapping, dock state and battery data;\n- ISC-027BW coordinator mapping tests for telemetry, targets, fan state and corrupt-frame rejection;\n- CI validation for Python linting/tests, integration JSON metadata and updater shell syntax, with duplicate PR runs automatically cancelled;
-- Bluetooth reconnect-loop tests cover missing devices, session failures, disconnect cleanup and cancellation;
-- English base strings plus an initial Dutch Home Assistant translation;
-- privacy-safe Home Assistant diagnostics with the Bluetooth address redacted, covered by diagnostics privacy tests;\n- protocol provenance and third-party notices.
+The remaining bytes in the TNT notification are intentionally kept as raw diagnostics until their meaning is confirmed on physical hardware.
 
-TNT-11-B is tracked as a planned model, not a currently supported model. Automatic discovery is intentionally not implemented yet. Its retail model name is known, but its real BLE advertisement name and protocol family must first be confirmed on the physical device.
+## Coexistence with the INKBIRD app
 
-The first physical INT-14-BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `INT-14-BW_WH`, is connectable and advertises vendor service FF00 as expected. Live Home Assistant validation now confirms base/probe battery reporting, all four probe channel mappings, dock/undock behavior, separate core/ambient values, automatic reconnect after a base-station power cycle, and simultaneous use of the INKBIRD iPhone app over Wi-Fi while Home Assistant owns the BLE connection. Proxy/HA restart recovery and longer-term coexistence testing still need validation before the model is marked hardware validated.
+For Wi-Fi capable models, the intended architecture is:
 
-The first physical ISC-027BW has now been detected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. Read-only GATT telemetry still needs live validation before enabling any control writes.
+- Home Assistant owns the BLE connection through a local adapter or ESPHome proxy;
+- the INKBIRD app continues to use Wi-Fi/cloud where supported.
 
-The first physical ISC-027BW has now been detected and connected through the Olimex ESPHome Bluetooth proxy. It advertises as `S27`, is connectable and advertises vendor service FFF0. The read-only GATT path is working for temperatures, fan state/output and target/alarm values. Physical testing also confirms that fan output is automatically regulated by the controller; Bluetooth can force fan on/off, but fan power is not a user-settable control.
+This has been physically confirmed on the INT-14-BW. ISC-027BW Wi-Fi/app coexistence and longer running sessions still need further testing.
 
-Physical hardware validation is still required before experimental ISC-027BW controls can be considered production-ready.
+## Home Assistant entities
 
-## Development installation and updates
+The exact entity set depends on the model. Current integration platforms include:
 
-Until the integration is available through HACS, development/test installations can use the included interactive updater at [scripts/update_inkbird_bbq.sh](scripts/update_inkbird_bbq.sh).
+- sensors;
+- binary sensors;
+- number controls;
+- select controls;
+- switches.
 
-It supports release/branch selection, backups, validation with `ha core check`, rollback on validation failure and an optional Home Assistant restart. See [docs/Updating.md](docs/Updating.md).
+Configuration/write entities are clearly marked as experimental where the protocol is still being hardware-validated.
 
-HACS is the intended long-term installation and update path for normal users.
+## Diagnostics
 
-## Protocol research
+Home Assistant diagnostics are implemented for troubleshooting. Bluetooth addresses are redacted. Model-specific raw protocol information may be included when useful for protocol validation, such as the TNT-11-B \`raw_packet\` field.
 
-Public reverse-engineering references and protocol notes are tracked in [docs/PROTOCOL_RESEARCH.md](docs/PROTOCOL_RESEARCH.md). The physical-device test procedure is maintained in [docs/Hardware-Validation.md](docs/Hardware-Validation.md).
+## Development updater
 
-## Roadmap
+HACS is now the preferred installation/update path for normal testing.
 
-1. Establish the Home Assistant/HACS integration structure.
-2. Implement Bluetooth discovery and read-only coordinators for known models.
-3. Capture and validate Bluetooth discovery, services, characteristics and packets on real hardware.
-4. Validate reconnect, availability and diagnostics handling through the ESPHome Bluetooth proxy.
-5. Confirm app/Wi-Fi/Apple Watch coexistence behavior.
-6. Add TNT-11-B support after identifying its actual BLE advertisement and protocol family.
-7. Validate the disabled-by-default experimental ISC-027BW and INT-14-BW controls on physical hardware before enabling any control by default.
+For development branches, protocol work or rollback testing, the repository still includes:
+
+\`scripts/update_inkbird_bbq.sh\`
+
+The updater supports branch/tag selection, backups, \`ha core check\`, rollback on validation failure and an optional Home Assistant restart. See [docs/Updating.md](docs/Updating.md).
+
+## Quality and security checks
+
+Changes are automatically checked with:
+
+- Python compile/syntax validation;
+- Ruff linting;
+- pytest;
+- JSON/YAML validation;
+- Home Assistant import smoke tests;
+- integration metadata and local brand validation;
+- official HACS Validation;
+- Bandit;
+- pip-audit when external Python requirements are present;
+- Gitleaks;
+- CodeQL.
+
+## Protocol research and hardware validation
+
+- [Protocol research](docs/PROTOCOL_RESEARCH.md)
+- [Hardware validation](docs/Hardware-Validation.md)
 
 ## Safety
 
-The ISC-027BW controls combustion airflow. Experimental write entities are present only for bench validation and are disabled by default in Home Assistant. Do not test fan controls on a live fire. Production use of fan writes requires completed protocol validation, readback checks and fail-safe behavior. Fan power is automatically regulated by the ISC-027BW and is not exposed as a user-settable control. INT-14-BW target-temperature writes remain disabled until their scaling is physically verified.
+The ISC-027BW controls combustion airflow. Do not use experimental fan/control writes as the only safety mechanism for a live fire. Validate changes on the bench first and keep the controller's own safety behavior in place.
+
+INT-14-BW target controls also remain experimental until the current Celsius-to-wire conversion has completed final physical set/readback validation.
 
 ## Changelog
 
