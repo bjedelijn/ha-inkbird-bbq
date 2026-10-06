@@ -89,6 +89,9 @@
       },
       "probe_temperature": {
         "name": "Probe temperature"
+      },
+      "ambient_temperature": {
+        "name": "Ambient temperature"
       }
     },
     "binary_sensor": {
