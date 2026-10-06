@@ -63,6 +63,7 @@ _INT14_STARTUP_SETTINGS = (
     ("temperature_unit", bytes.fromhex("01 04")),
     ("display_brightness", bytes.fromhex("01 06")),
 )
+_STANDARD_BATTERY_LEVEL_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
 
 
 class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -575,11 +576,16 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
 
         for service in client.services:
             service_uuid = service.uuid.lower()
-            if service_uuid != TNT_SERVICE_UUID:
-                continue
 
             for characteristic in service.characteristics:
                 uuid = characteristic.uuid.lower()
+                should_probe = (
+                    service_uuid == TNT_SERVICE_UUID
+                    or uuid == _STANDARD_BATTERY_LEVEL_UUID
+                )
+                if not should_probe:
+                    continue
+
                 characteristic_properties = sorted(characteristic.properties)
                 properties[uuid] = characteristic_properties
 
