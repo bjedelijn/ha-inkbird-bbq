@@ -19,6 +19,7 @@ class Tnt11bReading:
     """Decoded confirmed fields from one FF03 notification."""
 
     food_temperature: float
+    ambient_temperature: float | None
     raw: bytes
 
 
@@ -32,5 +33,6 @@ def decode_notification(data: bytes) -> Tnt11bReading:
     raw_value = struct.unpack_from("<h", data, 0)[0]
     return Tnt11bReading(
         food_temperature=float(raw_value),
+        ambient_temperature=float(data[2]) if len(data) >= 3 else None,
         raw=bytes(data),
     )
