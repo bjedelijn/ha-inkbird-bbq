@@ -22,7 +22,13 @@ def _coordinator_stub() -> tuple[Int14bwCoordinator, list[dict[str, Any]]]:
     coordinator._auth_event = asyncio.Event()
     coordinator._docked = [False] * 4
     published: list[dict[str, Any]] = []
-    coordinator._publish = lambda **values: published.append(values)
+    coordinator.data = {}
+
+    def _publish(**values: Any) -> None:
+        coordinator.data.update(values)
+        published.append(values)
+
+    coordinator._publish = _publish
     return coordinator, published
 
 
@@ -135,4 +141,26 @@ async def test_int14_setting_write_requests_readback() -> None:
         client.write_gatt_char.await_args_list[1].args[1]
         == bytes.fromhex("01 06")
     )
+    assert {"display_brightness": 50} in published
+
+
+@pytest.mark.asyncio
+async def test_int14_startup_reads_unit_and_brightness() -> None:
+    coordinator, published = _coordinator_stub()
+    client = MagicMock()
+    client.write_gatt_char = AsyncMock()
+    client.read_gatt_char = AsyncMock(
+        side_effect=[
+            bytes.fromhex("02 04 43"),
+            bytes.fromhex("02 06 32"),
+        ]
+    )
+
+    await coordinator._async_read_startup_settings(client)
+
+    assert [call.args[1] for call in client.write_gatt_char.await_args_list] == [
+        bytes.fromhex("01 04"),
+        bytes.fromhex("01 06"),
+    ]
+    assert {"temperature_unit": "C"} in published
     assert {"display_brightness": 50} in published
