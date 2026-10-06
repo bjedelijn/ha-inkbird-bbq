@@ -706,10 +706,14 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
             _LOGGER.debug("Ignoring malformed BG-BT1W FF03 frame: %s", err)
             return
 
-        self._publish(
-            probe_temperature=reading.food_temperature,
-            raw_packet=reading.raw.hex(),
-        )
+        values: dict[str, Any] = {
+            "probe_temperature": reading.food_temperature,
+            "raw_packet": reading.raw.hex(),
+        }
+        if reading.ambient_temperature is not None:
+            values["ambient_temperature"] = reading.ambient_temperature
+
+        self._publish(**values)
         _LOGGER.debug(
             "BG-BT1W FF03 RX: %s -> %.2f C",
             reading.raw.hex(),
