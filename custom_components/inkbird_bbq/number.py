@@ -56,8 +56,6 @@ INT14BW_NUMBERS = (
             native_min_value=0,
             native_max_value=100,
             native_step=1,
-            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            device_class=NumberDeviceClass.TEMPERATURE,
             mode=NumberMode.BOX,
             entity_category=EntityCategory.CONFIG,
         )
@@ -144,9 +142,55 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
         return bool(self.coordinator.data.get("available"))
 
     @property
+    def _is_int14_target(self) -> bool:
+        return (
+            isinstance(self.coordinator, Int14bwCoordinator)
+            and self.entity_description.key.startswith("probe_")
+            and self.entity_description.key.endswith("_target_control")
+        )
+
+    @property
+    def _uses_fahrenheit(self) -> bool:
+        return self._is_int14_target and self.coordinator.data.get(
+            "temperature_unit"
+        ) == "F"
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        if self._is_int14_target:
+            return (
+                UnitOfTemperature.FAHRENHEIT
+                if self._uses_fahrenheit
+                else UnitOfTemperature.CELSIUS
+            )
+        return self.entity_description.native_unit_of_measurement
+
+    @property
+    def native_min_value(self) -> float:
+        if self._is_int14_target:
+            return 32.0 if self._uses_fahrenheit else 0.0
+        return self.entity_description.native_min_value or 0.0
+
+    @property
+    def native_max_value(self) -> float:
+        if self._is_int14_target:
+            return 212.0 if self._uses_fahrenheit else 100.0
+        return self.entity_description.native_max_value or 100.0
+
+    @property
+    def native_step(self) -> float | None:
+        if self._is_int14_target:
+            return 1.0
+        return self.entity_description.native_step
+
+    @property
     def native_value(self) -> float | None:
         value = self.coordinator.data.get(self.entity_description.data_key)
-        return float(value) if isinstance(value, int | float) else None
+        if not isinstance(value, int | float):
+            return None
+        if self._uses_fahrenheit:
+            return round(float(value) * 9.0 / 5.0 + 32.0, 1)
+        return float(value)
 
     async def async_set_native_value(self, value: float) -> None:
         key = self.entity_description.key
@@ -157,7 +201,15 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
                 return
             if key.startswith("probe_") and key.endswith("_target_control"):
                 probe = int(key.split("_")[1])
-                await self.coordinator.async_set_probe_target(probe, value)
+                target_celsius = (
+                    (value - 32.0) * 5.0 / 9.0
+                    if self._uses_fahrenheit
+                    else value
+                )
+                await self.coordinator.async_set_probe_target(
+                    probe,
+                    target_celsius,
+                )
                 return
         if isinstance(self.coordinator, Isc027bwCoordinator):
             if key == "pit_target_control":
