@@ -89,6 +89,9 @@
       },
       "probe_temperature": {
         "name": "Vleesprobe temperatuur"
+      },
+      "ambient_temperature": {
+        "name": "Omgevingstemperatuur"
       }
     },
     "binary_sensor": {
