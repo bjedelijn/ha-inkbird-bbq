@@ -151,6 +151,14 @@ Confirmed:
 - reconnect after Home Assistant restart;
 - Home Assistant owns BLE while the INKBIRD iPhone app continues over Wi-Fi.
 
+Recommended phone setup for Wi-Fi-capable models:
+
+- allow the INKBIRD app to use its Wi-Fi/cloud path;
+- deny Bluetooth permission to the INKBIRD app when Bluetooth is not needed by the app;
+- let Home Assistant remain the sole BLE client through the local adapter or ESPHome Bluetooth proxy.
+
+This avoids the phone app competing with Home Assistant for a single BLE session. Do not use this recommendation for a Bluetooth-only model unless the app is known to work without Bluetooth.
+
 Still useful to validate:
 
 - a full long-running cook/test session;
