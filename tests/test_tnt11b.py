@@ -13,12 +13,14 @@ def test_decode_food_temperature() -> None:
     data = bytes.fromhex("19 00 18 71")
     reading = decode_notification(data)
     assert reading.food_temperature == 25.0
+    assert reading.ambient_temperature == 24.0
     assert reading.raw == data
 
 
 def test_decode_negative_temperature() -> None:
     reading = decode_notification(struct.pack("<h", -12))
     assert reading.food_temperature == -12.0
+    assert reading.ambient_temperature is None
 
 
 def test_decode_short_notification_rejected() -> None:
