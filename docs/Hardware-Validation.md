@@ -1,309 +1,220 @@
-# Hardware validation plan
+# Hardware validation
 
-This checklist is used before any supported model is marked as hardware-validated.
+This document records physical validation of the supported INKBIRD models.
 
-The primary development transport is an **Olimex ESP32-POE-ISO-EA** running ESPHome Bluetooth Proxy over Ethernet/PoE. A local Home Assistant Bluetooth adapter may also be used for comparison.
+The primary development transport is an **Olimex ESP32-POE-ISO-EA** running ESPHome Bluetooth Proxy over Ethernet/PoE. A local Home Assistant Bluetooth adapter can also be used.
+
+## Current status
+
+| Model | Discovery | Read path | Write/control path | Remaining work |
+| --- | --- | --- | --- | --- |
+| ISC-027BW | Confirmed | Confirmed | Fan on/off, pit target and probe alarms confirmed | Long-run/restart and app coexistence testing |
+| INT-14-BW | Confirmed | Confirmed | C/F and brightness confirmed; probe targets implemented with readback | Final physical probe-target set/readback; restart/long-run testing |
+| TNT-11-B | Confirmed | Probe temperature confirmed | No writes | Decode remaining notification bytes and perform broader temperature/reconnect tests |
 
 ## General preparation
 
-Before testing a device:
+Before a physical test:
 
-1. update Home Assistant to the intended test version;
-2. install the current INKBIRD BBQ development branch;
-3. confirm `ha core check` passes;
-4. confirm the ESPHome Bluetooth proxy is online in Home Assistant;
-5. place the proxy in its intended indoor location near the BBQ area;
-6. close the INKBIRD mobile app or ensure it is using Wi-Fi rather than holding the BLE connection;
-7. enable debug logging for the integration only when required.
+1. install the current integration version;
+2. confirm Home Assistant sees a connectable Bluetooth adapter or ESPHome proxy;
+3. confirm the test device is advertising;
+4. enable debug logging only when protocol data is required;
+5. keep safety-relevant blower testing off a live fire.
 
-Recommended logger configuration:
+Optional logger configuration:
 
-```yaml
+\`\`\`yaml
 logger:
   logs:
     custom_components.inkbird_bbq: debug
-```
+\`\`\`
 
 ## Bluetooth proxy
 
 Reference hardware:
 
-- Olimex ESP32-POE-ISO-EA
-- BOX-ESP32-POE-ISO-EA-F
-- external 2.4 GHz antenna
-- PoE/Ethernet
-- ESPHome Bluetooth Proxy with active connections enabled
+- Olimex ESP32-POE-ISO-EA;
+- BOX-ESP32-POE-ISO-EA-F;
+- external 2.4 GHz antenna;
+- PoE/Ethernet;
+- ESPHome Bluetooth Proxy with active connections enabled.
 
-Validate:
+Still useful to validate across all models:
 
-- Home Assistant sees the proxy as available;
-- active Bluetooth connections are enabled;
-- advertisements from the test device are visible;
-- the device can be connected through the proxy;
-- reconnect works after device power cycle;
-- reconnect works after proxy restart;
-- reconnect works after Home Assistant restart;
-- moving the phone in/out of BLE range does not unexpectedly steal the connection when the vendor app is using Wi-Fi.
+- proxy restart recovery;
+- Home Assistant restart recovery;
+- long-running BLE sessions;
+- behavior when multiple Bluetooth paths are available.
 
-## ISC-027BW validation
+## ISC-027BW
 
-### Discovery
+### Confirmed discovery
 
-Confirmed on physical hardware through the Olimex ESPHome Bluetooth proxy:
+Physical hardware advertises as:
 
-- advertised local name is `S27`;
-- advertisement is connectable;
-- vendor service UUID FFF0 is advertised;
-- manufacturer data is present.
+- local name: \`S27\`;
+- connectable: yes;
+- vendor service: FFF0.
 
-Continue to verify after connecting:
+### Confirmed telemetry
 
-- FFF0 service exists in GATT;
-- FFF1, FFF2 and FFF3 characteristic properties match expectations.
-
-### Read-only telemetry
-
-Initial physical connection through the Olimex proxy is confirmed. With the current bench setup, Home Assistant successfully read:
-
-- pit target: 107.2 °C;
-- fan running: off;
-- fan output: 0%;
-- three probe alarm targets: 310.0 °C.
-
-The live pit/probe temperatures were unknown during this observation. Continue by checking each value against the controller display/app:
+Home Assistant physically reads:
 
 - pit temperature;
-- meat probe 1;
-- meat probe 2;
-- meat probe 3;
+- meat probes 1-3;
 - fan output percentage;
 - fan running state;
 - pit target;
-- each meat-probe alarm target.
+- probe alarm targets 1-3.
 
-Test at several temperatures, including room temperature and a warmed probe.
+Frames are checked with CRC16-Modbus before decoding.
 
-### Invalid and absent probes
+### Confirmed writes
 
-Verify behavior when:
+Physical bench testing confirms:
 
-- a wired probe is unplugged;
-- a probe is reinserted;
-- a target/alarm is disabled;
-- the controller is idle;
-- the blower is physically disconnected.
+- fan on/off;
+- pit target changes;
+- probe alarm target changes;
+- immediate readback after writes.
 
-No invalid sentinel value may appear as a plausible temperature.
+The fan output percentage is automatically regulated by the ISC-027BW and is not exposed as a user-settable power control. The controller also disables the fan when the grill/pit probe is absent.
 
-### Connectivity
+### Remaining ISC work
 
-Verify:
+- long-running test session;
+- recovery after proxy restart;
+- recovery after Home Assistant restart;
+- Wi-Fi/INKBIRD-app coexistence;
+- safe behavior during BLE loss while a write is in progress.
 
-- clean initial connection;
-- power-cycle recovery;
-- BLE loss and reconnect;
-- proxy restart;
-- Home Assistant restart;
-- long-running connection for at least one complete cook/test session.
+## INT-14-BW
 
-### Wi-Fi/app coexistence
+### Confirmed discovery and session
 
-Confirmed for the INT-14-BW: Home Assistant owns the BLE connection through the Olimex proxy while the INKBIRD iPhone app remains connected to the controller over Wi-Fi. The HA values continued to update during this test.
+Physical hardware:
 
-Still validate:
+- advertises as \`INT-14-BW_WH\`;
+- is connectable;
+- advertises vendor service FF00;
+- completes challenge/response authentication;
+- maintains a persistent session through the Olimex proxy.
 
-- the same coexistence behavior on the ISC-027BW;
-- whether opening the app can ever seize the BLE session;
-- Apple Watch behavior.
+### Confirmed telemetry
 
-### Fan behavior confirmed
+Physically validated:
 
-Physical testing confirms that the ISC-027BW fan power is automatically regulated. The BLE control can switch the fan on/off, while FFF2 reports the actual automatic fan output percentage. The controller also switches the fan back off when the grill/pit probe is absent.
+- probes 1-4 dock/undock state;
+- probes 1-4 core temperature;
+- probes 1-4 ambient temperature;
+- base battery;
+- probes 1-4 battery values;
+- reconnect after power cycling the base.
 
-The fan-power number control is therefore not exposed in Home Assistant.
+Docked probes are exposed as unavailable for temperature.
 
-### Experimental control writes
+### Confirmed controls
 
-Experimental entities are included for bench validation and are **disabled by default**. Do not connect the blower to a live fire while validating writes.
+Physical testing confirms:
 
-Validate in this order:
+- temperature unit C/F;
+- display brightness.
 
-1. pit target: change a small amount, confirm the controller display/app changes, then restore it;
-2. one probe alarm target: change, confirm, restore;
-3. blower physically disconnected from the kamado: fan on/off;
-4. reconnect the grill probe and confirm the ISC automatically regulates fan output; actual output is read from FFF2 and is not user-adjustable;
-5. verify every write is reflected by the immediate FFF1/FFF3 readback;
-6. power-cycle and confirm the final values persist or reset exactly as the controller documents.
+Wi-Fi and auto-sleep controls from earlier development builds are no longer exposed. The official app did not provide a usable auto-sleep adjustment path during testing, and a Wi-Fi toggle is not required for the intended coexistence model.
 
-Also validate:
+### Probe target temperatures
 
-- CRC generation;
-- acceptable value ranges;
-- response/acknowledgement behavior;
-- behavior on BLE disconnect during a write;
-- behavior on Home Assistant restart;
-- safe fallback if Home Assistant is unavailable.
+Target reports are available per probe.
 
-These controls must remain disabled by default until this sequence is complete.
+Physical observations showed values that were Fahrenheit while Home Assistant had previously labelled them as Celsius. The current driver therefore treats the target wire value as **Fahrenheit x10**, converts it to Celsius for Home Assistant, and converts Celsius setpoints back to Fahrenheit x10 for the device.
 
-## INT-14-BW validation
+Examples:
 
-### Discovery
+- raw \`850\` = 85 °F = approximately 29.4 °C;
+- 70 °C encodes to 158 °F = raw \`1580\`.
 
-Confirmed on physical hardware through the Olimex ESPHome Bluetooth proxy:
+Target controls for probes 1-4 are implemented with immediate readback verification.
 
-- advertised local name is `INT-14-BW_WH`;
-- advertisement is connectable;
-- vendor service UUID FF00 is advertised;
-- manufacturer data and service data are empty in the observed advertisement.
+Still validate physically:
 
-Continue to verify:
+1. set a known Celsius target in Home Assistant;
+2. confirm the physical base/app shows the matching target;
+3. confirm the FF02 report returns the expected Fahrenheit x10 value;
+4. switch display unit C -> F -> C and confirm target semantics remain correct.
 
-- FF01, FF02 and FF03 properties after connecting;
-- standard battery characteristic 2A19 behavior.
+Until this passes, target writes remain experimental.
 
-Look-alike models such as INT-14S-BW or INT-12I-BW must not be matched automatically.
+### Connectivity and coexistence
 
-### Authentication
+Confirmed:
 
-Capture and verify:
-
-- challenge request `01 FB`;
-- six-byte fresh challenge;
-- generated verify response;
-- successful FC acknowledgement;
-- clock-sync acceptance;
-- persistent connection beyond the unauthenticated disconnect window.
-
-### Probe telemetry
-
-Confirmed on physical hardware:
-
-- all four dock states are reported correctly while probes are in the charging station;
-- docked probes are exposed as unavailable/unknown for temperature;
-- removing probe 1 changes its dock state immediately;
-- probe 1 then reports both core and ambient temperature;
-- first room-temperature observation reported 23.0 °C core and 23.0 °C ambient.
-
-Additional physical validation:
-
-- returning probe 1 to the charging station restores the docked state and its temperature entities return to unavailable/unknown;
-- removing probe 2 correctly changes probe 2 to undocked;
-- probe 2 reported 27.0 °C core and 24.0 °C ambient during the test, confirming separate core/ambient offsets and probe 2 channel mapping.
-
-Additional physical validation:
-
-- probe 3 undock/dock state is mapped correctly and reported 24.0 °C core / 24.0 °C ambient while undocked;
-- probe 4 undock/dock state is mapped correctly and reported 24.0 °C core / 24.0 °C ambient while undocked;
-- all four physical probe channels now map to their matching Home Assistant entities.
+- base power-cycle reconnect;
+- Home Assistant owns BLE while the INKBIRD iPhone app continues over Wi-Fi.
 
 Still validate:
 
-- deliberately different temperatures on probes 3 and 4 if a final cross-channel stress check is desired;
-- unavailable/sentinel values beyond normal docking behavior.
-
-### Read-only settings
-
-The integration requests the following settings over FF02 after authentication. Each request is sent separately; because two physical tests still left these values unavailable, the driver also reads FF02 after every request and retries missing settings every 30 seconds:
-
-- temperature unit;
-- target report for probes 1-4;
-- display brightness;
-- volume/mute raw report;
-- Wi-Fi enabled state;
-- auto-sleep.
-
-The first combined-read implementation and the second individual-write implementation both created the entities but left these values unavailable on the physical unit. Re-test the readback/retry path against the physical display/app:
-
-- temperature unit;
-- display brightness;
-- Wi-Fi enabled;
-- auto-sleep minutes.
-
-For target temperature, compare the captured raw value in diagnostics/debug logging with the app/display before exposing it as a temperature entity. The public protocol research still leaves the C/F scaling boundary unresolved for target writes.
-
-Target-temperature and volume writes remain disabled because their encoding/scaling is not sufficiently validated.
-
-### Experimental INT-14-BW setting writes
-
-Experimental setting controls are included but disabled by default. Validate them one at a time:
-
-1. temperature unit: C → F → C and confirm the base display changes;
-2. brightness: 100% → 50% → 100%;
-3. auto-sleep: set a small test value, confirm, then restore;
-4. Wi-Fi switch only after the other controls pass, because it can intentionally disconnect the base from Wi-Fi.
-
-After each write, confirm both the physical display/app and the FF02 readback/debug data. Do not enable INT-14-BW target-temperature writes until the target scaling question is resolved.
-
-### Battery reporting
-
-Confirmed on physical hardware:
-
-- base battery is exposed in Home Assistant;
-- battery values for all four probes are exposed;
-- first observed values were 99% for the base and 100% for each probe.
-
-Still validate:
-
-- charging behavior over time;
-- changing battery values;
-- invalid/unknown battery values.
-
-### Connectivity
-
-Confirmed on physical hardware through the Olimex proxy:
-
-- when the INT-14-BW base station was powered off, Home Assistant lost the device data as expected;
-- after the base station was powered back on and resumed Bluetooth advertising, the integration automatically reconnected without manual intervention;
-- battery, dock-state and temperature values resumed after reconnect.
-
-Still validate:
-
-- ESPHome proxy restart recovery;
+- proxy restart recovery;
 - Home Assistant restart recovery;
-- a longer running session.
+- a full long-running cook/test session;
+- Apple Watch coexistence if relevant.
 
-### Wi-Fi/app/Watch coexistence
+## TNT-11-B / BG-BT1W
 
-With Home Assistant connected over BLE:
+### Confirmed discovery
 
-- keep the base on Wi-Fi;
-- verify the INKBIRD app can monitor over Wi-Fi;
-- verify Apple Watch monitoring;
-- confirm opening the phone app does not seize the BLE session when Wi-Fi monitoring is available.
+Physical device:
 
-Also test the reverse order: app first, then Home Assistant.
+- retail model: TNT-11-B;
+- BLE local name: \`BG-BT1W\`;
+- connectable through Home Assistant;
+- FF01 protocol family;
+- FF03 notifications provide live data.
 
-## TNT-11-B discovery session
+Automatic discovery is enabled for \`BG-BT1W\`.
 
-No protocol is assumed yet.
+### Confirmed temperature field
 
-Record:
+A real diagnostic notification was:
 
-- advertised local name;
-- address;
-- manufacturer data;
-- service UUIDs;
-- all GATT services and characteristic properties;
-- battery service behavior;
-- notifications with the probe cold, warm and changing temperature;
-- behavior when the phone app connects;
-- whether authentication is required;
-- whether its protocol resembles the FF00/auth family.
+\`\`\`text
+19 00 18 71
+\`\`\`
 
-Only after this capture should automatic discovery and a model driver be added.
+The first two bytes are interpreted as a signed little-endian integer in whole degrees Celsius:
+
+\`19 00\` -> \`0x0019\` -> **25 °C**
+
+This corrected an earlier experimental decoder that divided the value by 100 and incorrectly displayed 0.25 °C.
+
+Home Assistant now exposes this confirmed field as the TNT-11-B probe temperature.
+
+### Remaining TNT work
+
+The bytes after the first two temperature bytes are retained as \`raw_packet\` diagnostics and are not assigned a meaning yet.
+
+Continue physical capture at several known temperatures to determine:
+
+- whether byte 2 contains a second/ambient temperature or another field;
+- battery/state encoding;
+- behavior during rapid warming/cooling;
+- negative/low-temperature representation if applicable;
+- reconnect after device/proxy/Home Assistant restart;
+- behavior when the vendor app connects.
+
+No TNT write controls are currently exposed.
 
 ## Acceptance criteria
 
-A model can move from **experimental** to **hardware validated** only when:
+A model can be considered fully hardware validated when:
 
-- automatic discovery is correct and model-specific;
-- all exposed read-only entities match the physical device/app;
-- invalid probe states are handled safely;
-- reconnect is reliable through the Olimex proxy;
+- discovery is model-specific and repeatable;
+- every exposed value matches the physical display/app;
+- invalid/absent probe states are handled safely;
+- reconnect is reliable;
 - Home Assistant restart recovery works;
-- diagnostics contain enough information to investigate failures without exposing unnecessary identifiers;
-- app/Wi-Fi coexistence behavior is documented;
-- CI remains green.
+- diagnostics are useful without exposing unnecessary identifiers;
+- app coexistence behavior is documented where relevant;
+- all repository CI, Security, CodeQL and HACS validation checks remain green.
 
-ISC-027BW control entities require a separate write-safety validation before they can be enabled.
+Safety-relevant write paths require explicit physical validation beyond unit tests.
