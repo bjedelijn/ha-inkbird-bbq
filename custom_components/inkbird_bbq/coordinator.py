@@ -565,55 +565,6 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
                     payload.hex(),
                 )
 
-    async def _async_collect_gatt_diagnostics(self, client: BleakClient) -> None:
-        """Read safe TNT-11-B GATT values for protocol diagnostics.
-
-        This deliberately performs reads only. It does not write to unknown
-        characteristics while the battery protocol is still being researched.
-        """
-        readable: dict[str, str] = {}
-        properties: dict[str, list[str]] = {}
-
-        for service in client.services:
-            service_uuid = service.uuid.lower()
-
-            for characteristic in service.characteristics:
-                uuid = characteristic.uuid.lower()
-                should_probe = (
-                    service_uuid == TNT_SERVICE_UUID
-                    or uuid == _STANDARD_BATTERY_LEVEL_UUID
-                )
-                if not should_probe:
-                    continue
-
-                characteristic_properties = sorted(characteristic.properties)
-                properties[uuid] = characteristic_properties
-
-                if "read" not in characteristic.properties:
-                    continue
-
-                try:
-                    raw = bytes(await client.read_gatt_char(characteristic))
-                except Exception as err:  # noqa: BLE001 - diagnostic probe only
-                    _LOGGER.debug(
-                        "BG-BT1W diagnostic read %s failed: %s",
-                        uuid,
-                        err,
-                    )
-                    continue
-
-                readable[uuid] = raw.hex()
-                _LOGGER.debug(
-                    "BG-BT1W diagnostic read %s: %s",
-                    uuid,
-                    raw.hex(),
-                )
-
-        self._publish(
-            gatt_characteristic_properties=properties,
-            gatt_read_values=readable,
-        )
-
     def _on_temperature(
         self,
         _characteristic: BleakGATTCharacteristic | None,
@@ -694,6 +645,55 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_collect_gatt_diagnostics(self, client: BleakClient) -> None:
+        """Read safe TNT-11-B GATT values for protocol diagnostics.
+
+        This deliberately performs reads only. It does not write to unknown
+        characteristics while the battery protocol is still being researched.
+        """
+        readable: dict[str, str] = {}
+        properties: dict[str, list[str]] = {}
+
+        for service in client.services:
+            service_uuid = service.uuid.lower()
+
+            for characteristic in service.characteristics:
+                uuid = characteristic.uuid.lower()
+                should_probe = (
+                    service_uuid == TNT_SERVICE_UUID
+                    or uuid == _STANDARD_BATTERY_LEVEL_UUID
+                )
+                if not should_probe:
+                    continue
+
+                characteristic_properties = sorted(characteristic.properties)
+                properties[uuid] = characteristic_properties
+
+                if "read" not in characteristic.properties:
+                    continue
+
+                try:
+                    raw = bytes(await client.read_gatt_char(characteristic))
+                except Exception as err:  # noqa: BLE001 - diagnostic probe only
+                    _LOGGER.debug(
+                        "BG-BT1W diagnostic read %s failed: %s",
+                        uuid,
+                        err,
+                    )
+                    continue
+
+                readable[uuid] = raw.hex()
+                _LOGGER.debug(
+                    "BG-BT1W diagnostic read %s: %s",
+                    uuid,
+                    raw.hex(),
+                )
+
+        self._publish(
+            gatt_characteristic_properties=properties,
+            gatt_read_values=readable,
+        )
 
     def _on_temperature(
         self,
