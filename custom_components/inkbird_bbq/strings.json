@@ -112,6 +112,9 @@
       },
       "wifi_enabled": {
         "name": "Wi-Fi enabled"
+      },
+      "charging": {
+        "name": "Charging"
       }
     },
     "number": {
