@@ -9,7 +9,7 @@ The primary development transport is an **Olimex ESP32-POE-ISO-EA** running ESPH
 | Model | Discovery | Read path | Write/control path | Remaining work |
 | --- | --- | --- | --- | --- |
 | ISC-027BW | Confirmed | Confirmed | Fan on/off, pit target and probe alarms confirmed | Long-run/restart and app coexistence testing |
-| INT-14-BW | Confirmed | Confirmed | C/F and brightness confirmed; probe targets implemented with readback | Final physical probe-target set/readback; restart/long-run testing |
+| INT-14-BW | Confirmed | Confirmed | C/F, brightness and probe targets confirmed | Long-run/soak testing |
 | TNT-11-B | Confirmed | Probe temperature confirmed | No writes | Decode remaining notification bytes and perform broader temperature/reconnect tests |
 
 ## General preparation
@@ -118,8 +118,10 @@ Docked probes are exposed as unavailable for temperature.
 
 Physical testing confirms:
 
-- temperature unit C/F;
-- display brightness.
+- temperature unit C/F, including C -> F -> C;
+- display brightness;
+- probe target writes for all four probes;
+- target values match both the physical base and the INKBIRD app.
 
 Wi-Fi and auto-sleep controls from earlier development builds are no longer exposed. The official app did not provide a usable auto-sleep adjustment path during testing, and a Wi-Fi toggle is not required for the intended coexistence model.
 
@@ -134,28 +136,23 @@ Examples:
 - raw \`850\` = 85 °F = approximately 29.4 °C;
 - 70 °C encodes to 158 °F = raw \`1580\`.
 
-Target controls for probes 1-4 are implemented with immediate readback verification.
+Target controls for probes 1-4 use immediate readback verification and are now physically validated. Setting a Celsius target in Home Assistant produces the matching value on the physical base and in the INKBIRD app. Switching C -> F -> C preserves the target correctly.
 
-Still validate physically:
+The target number entities follow the device display unit in Home Assistant: °C in Celsius mode and °F in Fahrenheit mode. The coordinator continues to keep a normalized Celsius value internally and converts at the entity/wire boundaries.
 
-1. set a known Celsius target in Home Assistant;
-2. confirm the physical base/app shows the matching target;
-3. confirm the FF02 report returns the expected Fahrenheit x10 value;
-4. switch display unit C -> F -> C and confirm target semantics remain correct.
-
-Until this passes, target writes remain experimental.
+Temperature unit and display brightness are requested immediately after authentication, with direct FF02 readback/retry, so their Home Assistant controls populate from the current device state instead of initially remaining unknown.
 
 ### Connectivity and coexistence
 
 Confirmed:
 
 - base power-cycle reconnect;
+- reconnect after ESPHome Bluetooth Proxy restart;
+- reconnect after Home Assistant restart;
 - Home Assistant owns BLE while the INKBIRD iPhone app continues over Wi-Fi.
 
-Still validate:
+Still useful to validate:
 
-- proxy restart recovery;
-- Home Assistant restart recovery;
 - a full long-running cook/test session;
 - Apple Watch coexistence if relevant.
 
