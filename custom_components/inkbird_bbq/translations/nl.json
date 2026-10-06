@@ -112,6 +112,9 @@
       },
       "wifi_enabled": {
         "name": "Wi-Fi ingeschakeld"
+      },
+      "charging": {
+        "name": "Opladen"
       }
     },
     "number": {
