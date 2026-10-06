@@ -56,6 +56,11 @@ _LOGGER = logging.getLogger(__name__)
 _INT14_CURRENT_INFO_REQUEST = bytes.fromhex(
     "02 f1 01 02 f1 03 02 f1 19"
 )
+_INT14_STARTUP_SETTINGS = (
+    ("temperature_unit", bytes.fromhex("01 04")),
+    ("display_brightness", bytes.fromhex("01 06")),
+)
+
 
 class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Base coordinator for a persistent INKBIRD Bluetooth session."""
@@ -322,6 +327,7 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             _INT14_CURRENT_INFO_REQUEST,
             response=False,
         )
+        await self._async_read_startup_settings(client)
 
         self._set_available(True)
 
@@ -338,6 +344,46 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_read_startup_settings(self, client: BleakClient) -> None:
+        """Read user-visible INT-14-BW settings after authentication."""
+        for data_key, request in _INT14_STARTUP_SETTINGS:
+            for attempt in range(3):
+                if data_key in self.data:
+                    break
+
+                await client.write_gatt_char(
+                    CHAR_CONTROL,
+                    request,
+                    response=False,
+                )
+                await asyncio.sleep(0.25)
+
+                try:
+                    raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+                except Exception as err:  # noqa: BLE001 - optional readback path
+                    _LOGGER.debug(
+                        "INT-14-BW startup read %s attempt %d failed: %s",
+                        data_key,
+                        attempt + 1,
+                        err,
+                    )
+                    continue
+
+                if raw:
+                    _LOGGER.debug(
+                        "INT-14-BW startup read %s attempt %d: %s",
+                        data_key,
+                        attempt + 1,
+                        raw.hex(),
+                    )
+                    self._on_control(None, bytearray(raw))
+
+            if data_key not in self.data:
+                _LOGGER.debug(
+                    "INT-14-BW startup setting %s is still unavailable",
+                    data_key,
+                )
 
     async def _async_write_setting(
         self,
