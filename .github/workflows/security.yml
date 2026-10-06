@@ -1,0 +1,67 @@
+name: Security
+
+on:
+  push:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Security checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install security tools
+        run: python -m pip install --upgrade bandit pip-audit
+
+      - name: Run Bandit
+        run: bandit -r custom_components/inkbird_bbq -ll
+
+      - name: Build requirements from manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          requirements = manifest.get("requirements", [])
+          Path("/tmp/inkbird-bbq-requirements.txt").write_text(
+              "\n".join(requirements) + ("\n" if requirements else ""),
+              encoding="utf-8",
+          )
+          if requirements:
+              print("\n".join(requirements))
+          else:
+              print("No external Python requirements")
+          PY
+
+      - name: Audit Python dependencies
+        run: |
+          if [ -s /tmp/inkbird-bbq-requirements.txt ]; then
+            pip-audit -r /tmp/inkbird-bbq-requirements.txt
+          else
+            echo "No external Python requirements to audit"
+          fi
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
