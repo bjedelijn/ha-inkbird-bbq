@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Validate Python / JSON / YAML / Home Assistant
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install validation and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install homeassistant pytest pytest-asyncio ruff PyYAML
+
+      - name: Python syntax check
+        run: python -m compileall -q custom_components tests
+
+      - name: Ruff critical checks
+        run: ruff check custom_components tests --select=E9,F63,F7,F82
+
+      - name: Validate JSON files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          files = list(Path("custom_components").rglob("*.json"))
+          files.append(Path("hacs.json"))
+          for path in files:
+              with path.open("r", encoding="utf-8") as fh:
+                  json.load(fh)
+              print(f"OK {path}")
+          PY
+
+      - name: Validate YAML files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          files = list(Path("custom_components").rglob("*.yaml"))
+          files += list(Path("docs/examples").rglob("*.yaml"))
+          for path in files:
+              with path.open("r", encoding="utf-8") as fh:
+                  yaml.safe_load(fh)
+              print(f"OK {path}")
+          PY
+
+      - name: Validate updater shell syntax
+        run: bash -n scripts/update_inkbird_bbq.sh
+
+      - name: Validate manifest requirements
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          requirements = manifest.get("requirements", [])
+          for requirement in requirements:
+              if "==" not in requirement:
+                  raise SystemExit(f"Requirement is not pinned: {requirement}")
+              print(f"OK pinned requirement: {requirement}")
+          if not requirements:
+              print("OK no external Python requirements")
+          PY
+
+      - name: Install integration requirements
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          requirements = manifest.get("requirements", [])
+          if requirements:
+              subprocess.check_call(
+                  [sys.executable, "-m", "pip", "install", *requirements]
+              )
+          PY
+
+      - name: Validate Home Assistant integration metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text()
+          )
+          hacs = json.loads(Path("hacs.json").read_text())
+
+          assert manifest["domain"] == "inkbird_bbq"
+          assert manifest["name"] == hacs["name"]
+          assert manifest["config_flow"] is True
+          assert manifest["integration_type"] == "device"
+          assert manifest["iot_class"] == "local_push"
+          assert "bluetooth" in manifest["dependencies"]
+          assert manifest["documentation"].startswith("https://github.com/")
+          assert manifest["issue_tracker"].startswith("https://github.com/")
+          assert manifest["version"]
+          assert {item["local_name"] for item in manifest["bluetooth"]} == {
+              "ISC-027BW",
+              "S27",
+              "INT-14-BW",
+              "INT-14-BW_WH",
+              "BG-BT1W",
+          }
+          assert any(
+              item.get("local_name") == "S27"
+              and item.get("service_uuid")
+              == "0000fff0-0000-1000-8000-00805f9b34fb"
+              for item in manifest["bluetooth"]
+          )
+          PY
+
+      - name: Validate local brand icons
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          from PIL import Image
+
+          brand = Path("custom_components/inkbird_bbq/brand")
+          expected = {
+              "icon.png": (512, 512),
+              "dark_icon.png": (512, 512),
+              "icon@2x.png": (512, 512),
+              "dark_icon@2x.png": (512, 512),
+          }
+          for filename, dimensions in expected.items():
+              path = brand / filename
+              with Image.open(path) as image:
+                  image.verify()
+              with Image.open(path) as image:
+                  assert image.size == dimensions
+              print(f"OK {path}")
+          PY
+
+      - name: Home Assistant import smoke test
+        run: |
+          python - <<'PY'
+          import importlib
+          from importlib.metadata import version
+
+          modules = (
+              "custom_components.inkbird_bbq",
+              "custom_components.inkbird_bbq.config_flow",
+              "custom_components.inkbird_bbq.coordinator",
+              "custom_components.inkbird_bbq.sensor",
+              "custom_components.inkbird_bbq.binary_sensor",
+              "custom_components.inkbird_bbq.number",
+              "custom_components.inkbird_bbq.select",
+              "custom_components.inkbird_bbq.switch",
+              "custom_components.inkbird_bbq.diagnostics",
+          )
+
+          print(f"Home Assistant version: {version('homeassistant')}")
+          for module in modules:
+              importlib.import_module(module)
+              print(f"OK imported {module}")
+          PY
+
+      - name: Ruff
+        run: ruff check custom_components tests
+
+      - name: Pytest
+        run: pytest -q

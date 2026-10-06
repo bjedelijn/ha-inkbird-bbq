@@ -1,0 +1,154 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Dit INKBIRD-apparaat is al geconfigureerd.",
+      "no_devices_found": "Er zijn nog geen ondersteunde INKBIRD BBQ-apparaten gevonden.",
+      "not_supported": "Dit Bluetooth-apparaat is geen ondersteund INKBIRD BBQ-model."
+    },
+    "step": {
+      "confirm": {
+        "title": "{model} toevoegen",
+        "description": "{model} met Bluetooth-adres {address} toevoegen?"
+      },
+      "user": {
+        "title": "INKBIRD BBQ",
+        "description": "Selecteer een ondersteund INKBIRD BBQ-apparaat dat Home Assistant al heeft gevonden.",
+        "data": {
+          "address": "Apparaat"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "pit_temperature": {
+        "name": "Kamado temperatuur"
+      },
+      "meat_probe_1": {
+        "name": "Vleesprobe 1"
+      },
+      "meat_probe_2": {
+        "name": "Vleesprobe 2"
+      },
+      "meat_probe_3": {
+        "name": "Vleesprobe 3"
+      },
+      "fan_output": {
+        "name": "Ventilatorvermogen"
+      },
+      "pit_target": {
+        "name": "Kamado doeltemperatuur"
+      },
+      "meat_probe_1_alarm": {
+        "name": "Vleesprobe 1 alarm"
+      },
+      "meat_probe_2_alarm": {
+        "name": "Vleesprobe 2 alarm"
+      },
+      "meat_probe_3_alarm": {
+        "name": "Vleesprobe 3 alarm"
+      },
+      "probe_1_core": {
+        "name": "Probe 1 kern"
+      },
+      "probe_2_core": {
+        "name": "Probe 2 kern"
+      },
+      "probe_3_core": {
+        "name": "Probe 3 kern"
+      },
+      "probe_4_core": {
+        "name": "Probe 4 kern"
+      },
+      "probe_1_ambient": {
+        "name": "Probe 1 omgeving"
+      },
+      "probe_2_ambient": {
+        "name": "Probe 2 omgeving"
+      },
+      "probe_3_ambient": {
+        "name": "Probe 3 omgeving"
+      },
+      "probe_4_ambient": {
+        "name": "Probe 4 omgeving"
+      },
+      "base_battery": {
+        "name": "Batterij basisstation"
+      },
+      "probe_1_battery": {
+        "name": "Batterij probe 1"
+      },
+      "probe_2_battery": {
+        "name": "Batterij probe 2"
+      },
+      "probe_3_battery": {
+        "name": "Batterij probe 3"
+      },
+      "probe_4_battery": {
+        "name": "Batterij probe 4"
+      },
+      "probe_temperature": {
+        "name": "Vleesprobe temperatuur"
+      }
+    },
+    "binary_sensor": {
+      "fan_on": {
+        "name": "Ventilator actief"
+      },
+      "probe_1_docked": {
+        "name": "Probe 1 in laadstation"
+      },
+      "probe_2_docked": {
+        "name": "Probe 2 in laadstation"
+      },
+      "probe_3_docked": {
+        "name": "Probe 3 in laadstation"
+      },
+      "probe_4_docked": {
+        "name": "Probe 4 in laadstation"
+      },
+      "wifi_enabled": {
+        "name": "Wi-Fi ingeschakeld"
+      }
+    },
+    "number": {
+      "display_brightness_control": {
+        "name": "Schermhelderheid instellen (experimenteel)"
+      },
+      "pit_target_control": {
+        "name": "Kamado doeltemperatuur instellen (experimenteel)"
+      },
+      "probe_1_alarm_control": {
+        "name": "Vleesprobe 1 alarm instellen (experimenteel)"
+      },
+      "probe_2_alarm_control": {
+        "name": "Vleesprobe 2 alarm instellen (experimenteel)"
+      },
+      "probe_3_alarm_control": {
+        "name": "Vleesprobe 3 alarm instellen (experimenteel)"
+      },
+      "probe_1_target_control": {
+        "name": "Doeltemperatuur probe 1 instellen (experimenteel)"
+      },
+      "probe_2_target_control": {
+        "name": "Doeltemperatuur probe 2 instellen (experimenteel)"
+      },
+      "probe_3_target_control": {
+        "name": "Doeltemperatuur probe 3 instellen (experimenteel)"
+      },
+      "probe_4_target_control": {
+        "name": "Doeltemperatuur probe 4 instellen (experimenteel)"
+      }
+    },
+    "select": {
+      "temperature_unit_control": {
+        "name": "Temperatuureenheid instellen (experimenteel)"
+      }
+    },
+    "switch": {
+      "fan_control": {
+        "name": "Ventilator bediening (experimenteel)"
+      }
+    }
+  }
+}
