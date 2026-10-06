@@ -207,9 +207,13 @@ async def test_tnt_gatt_diagnostics_reads_only_readable_vendor_characteristics()
 
     await coordinator._async_collect_gatt_diagnostics(client)
 
-    client.read_gatt_char.assert_awaited_once_with(readable)
+    assert [call.args[0] for call in client.read_gatt_char.await_args_list] == [
+        readable,
+        other_service_char,
+    ]
     assert published[-1]["gatt_read_values"] == {
-        readable.uuid: "64"
+        readable.uuid: "64",
+        other_service_char.uuid: "64",
     }
     assert published[-1]["gatt_characteristic_properties"][write_only.uuid] == [
         "write"
