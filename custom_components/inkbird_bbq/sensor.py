@@ -114,6 +114,14 @@ TNT11B_SENSORS: tuple[InkbirdSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    InkbirdSensorDescription(
+        key="ambient_temperature",
+        translation_key="ambient_temperature",
+        data_key="ambient_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 )
 
 INT14BW_SENSORS: tuple[InkbirdSensorDescription, ...] = tuple(
