@@ -20,6 +20,7 @@ class Tnt11bReading:
 
     food_temperature: float
     ambient_temperature: float | None
+    battery_raw: int | None
     raw: bytes
 
 
@@ -34,5 +35,6 @@ def decode_notification(data: bytes) -> Tnt11bReading:
     return Tnt11bReading(
         food_temperature=float(raw_value),
         ambient_temperature=float(data[2]) if len(data) >= 3 else None,
+        battery_raw=data[3] if len(data) >= 4 else None,
         raw=bytes(data),
     )
