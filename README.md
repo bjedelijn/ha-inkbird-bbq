@@ -101,7 +101,11 @@ For Wi-Fi capable models, the intended architecture is:
 - Home Assistant owns the BLE connection through a local adapter or ESPHome proxy;
 - the INKBIRD app continues to use Wi-Fi/cloud where supported.
 
+For the most reliable coexistence, disable Bluetooth permission for the INKBIRD app on the phone when Wi-Fi monitoring is sufficient. This prevents the app from competing with Home Assistant for the device's BLE connection while still allowing the app to use its Wi-Fi/cloud path.
+
 This has been physically confirmed on the INT-14-BW. ISC-027BW Wi-Fi/app coexistence and longer running sessions still need further testing.
+
+Do not apply this recommendation blindly to Bluetooth-only devices such as the TNT-11-B; the vendor app may require Bluetooth for those models.
 
 ## Home Assistant entities
 
