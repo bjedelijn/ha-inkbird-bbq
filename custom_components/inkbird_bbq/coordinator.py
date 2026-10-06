@@ -714,6 +714,7 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
             values["ambient_temperature"] = reading.ambient_temperature
         if reading.battery_raw is not None:
             values["battery_raw"] = reading.battery_raw
+            values["charging"] = reading.battery_raw == 0xFF
 
         self._publish(**values)
         _LOGGER.debug(
