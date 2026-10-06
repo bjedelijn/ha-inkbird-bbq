@@ -45,10 +45,10 @@ from .devices.isc027bw import (
     decode_telemetry,
 )
 from .devices.tnt11b import (
-    SERVICE_UUID as TNT_SERVICE_UUID,
+    CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
 )
 from .devices.tnt11b import (
-    CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
+    SERVICE_UUID as TNT_SERVICE_UUID,
 )
 from .devices.tnt11b import (
     decode_notification as decode_tnt_notification,
