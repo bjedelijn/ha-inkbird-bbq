@@ -92,6 +92,9 @@
       },
       "ambient_temperature": {
         "name": "Ambient temperature"
+      },
+      "battery_raw": {
+        "name": "Battery raw"
       }
     },
     "binary_sensor": {
