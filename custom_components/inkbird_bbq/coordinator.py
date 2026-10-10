@@ -272,6 +272,10 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
     @staticmethod
     def _decode_fan_values(data: bytes) -> dict[str, Any]:
         """Decode confirmed local settings from FFF1."""
+        if not data:
+            return {}
+        if len(data) != 20:
+            return {"fan_on": bool(data[0])}
         settings = decode_settings(data)
         return {
             "fan_on": settings.fan_on,
