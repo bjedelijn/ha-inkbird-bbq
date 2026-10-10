@@ -38,9 +38,25 @@ class Isc027bwTargets:
     """Decoded FFF3 target values."""
 
     pit_target: float | None
+    pit_high_alarm: float | None
+    pit_low_alarm: float | None
     meat_probe_1_alarm: float | None
     meat_probe_2_alarm: float | None
     meat_probe_3_alarm: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class Isc027bwSettings:
+    """Decoded FFF1 local settings."""
+
+    fan_on: bool
+    temperature_unit: str
+    pit_calibration: float
+    probe_1_calibration: float
+    probe_2_calibration: float
+    probe_3_calibration: float
+    lid_reminder: bool
+    device_sound: bool
 
 
 def crc16_modbus(data: bytes) -> int:
@@ -105,6 +121,12 @@ def decode_targets(data: bytes) -> Isc027bwTargets:
 
     return Isc027bwTargets(
         pit_target=fahrenheit10_to_celsius(struct.unpack_from("<H", data, 0)[0]),
+        pit_high_alarm=fahrenheit10_to_celsius(
+            struct.unpack_from("<H", data, 2)[0]
+        ),
+        pit_low_alarm=fahrenheit10_to_celsius(
+            struct.unpack_from("<H", data, 10)[0]
+        ),
         meat_probe_1_alarm=fahrenheit10_to_celsius(
             struct.unpack_from("<H", data, 4)[0]
         ),
@@ -127,18 +149,63 @@ def celsius_to_fahrenheit10(value: float) -> int:
     return round((value * 9.0 / 5.0 + 32.0) * 10.0)
 
 
-def build_fan_control_frame(
+def decode_settings(data: bytes) -> Isc027bwSettings:
+    """Decode confirmed local settings from an FFF1 frame."""
+    validate_frame(data)
+    return Isc027bwSettings(
+        fan_on=bool(data[0]),
+        temperature_unit="F" if data[1] else "C",
+        pit_calibration=struct.unpack_from("<b", data, 2)[0] / 10.0,
+        probe_1_calibration=struct.unpack_from("<b", data, 3)[0] / 10.0,
+        probe_2_calibration=struct.unpack_from("<b", data, 4)[0] / 10.0,
+        probe_3_calibration=struct.unpack_from("<b", data, 5)[0] / 10.0,
+        lid_reminder=bool(data[6]),
+        device_sound=bool(data[7]),
+    )
+
+
+def build_settings_control_frame(
     current: bytes,
     *,
     fan_on: bool | None = None,
+    temperature_unit: str | None = None,
+    calibrations: dict[str, float] | None = None,
+    lid_reminder: bool | None = None,
+    device_sound: bool | None = None,
 ) -> bytes:
-    """Build an FFF1 fan on/off frame while preserving all other fields."""
+    """Build an FFF1 settings frame while preserving unknown fields."""
     validate_frame(current)
     payload = bytearray(current)
 
     if fan_on is not None:
         payload[0] = 1 if fan_on else 0
 
+    if temperature_unit is not None:
+        normalized = temperature_unit.upper()
+        if normalized not in {"C", "F"}:
+            raise ValueError("Temperature unit must be C or F")
+        payload[1] = 0 if normalized == "C" else 1
+
+    if calibrations:
+        offsets = {
+            "pit": 2,
+            "probe_1": 3,
+            "probe_2": 4,
+            "probe_3": 5,
+        }
+        for key, value in calibrations.items():
+            if key not in offsets:
+                raise ValueError(f"Unknown calibration field: {key}")
+            raw = round(value * 10.0)
+            if not -128 <= raw <= 127:
+                raise ValueError("Calibration must fit signed int8 tenths")
+            struct.pack_into("<b", payload, offsets[key], raw)
+
+    if lid_reminder is not None:
+        payload[6] = 1 if lid_reminder else 0
+
+    if device_sound is not None:
+        payload[7] = 1 if device_sound else 0
 
     struct.pack_into(
         "<H",
@@ -149,10 +216,21 @@ def build_fan_control_frame(
     return bytes(payload)
 
 
+def build_fan_control_frame(
+    current: bytes,
+    *,
+    fan_on: bool | None = None,
+) -> bytes:
+    """Build an FFF1 fan on/off frame while preserving all other fields."""
+    return build_settings_control_frame(current, fan_on=fan_on)
+
+
 def build_target_control_frame(
     current: bytes,
     *,
     pit_target: float | None = None,
+    pit_high_alarm: float | None = None,
+    pit_low_alarm: float | None = None,
     probe_alarms: dict[int, float] | None = None,
 ) -> bytes:
     """Build an FFF3 target/alarm frame while preserving unknown bytes."""
@@ -161,6 +239,16 @@ def build_target_control_frame(
 
     if pit_target is not None:
         struct.pack_into("<H", payload, 0, celsius_to_fahrenheit10(pit_target))
+
+    if pit_high_alarm is not None:
+        struct.pack_into(
+            "<H", payload, 2, celsius_to_fahrenheit10(pit_high_alarm)
+        )
+
+    if pit_low_alarm is not None:
+        struct.pack_into(
+            "<H", payload, 10, celsius_to_fahrenheit10(pit_low_alarm)
+        )
 
     if probe_alarms:
         offsets = {1: 4, 2: 6, 3: 8}
