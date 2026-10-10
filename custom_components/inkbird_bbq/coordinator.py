@@ -39,11 +39,13 @@ from .devices.isc027bw import (
     CHAR_FAN,
     CHAR_TARGETS,
     CHAR_TELEMETRY,
-    SERVICE_UUID as ISC_SERVICE_UUID,
     build_fan_control_frame,
     build_target_control_frame,
     decode_targets,
     decode_telemetry,
+)
+from .devices.isc027bw import (
+    SERVICE_UUID as ISC_SERVICE_UUID,
 )
 from .devices.tnt11b import (
     CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
