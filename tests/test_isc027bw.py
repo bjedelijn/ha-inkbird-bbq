@@ -144,6 +144,19 @@ def test_build_settings_control_frame_preserves_unknown_fields() -> None:
     assert updated[8] == 0x71
     assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
 
+
+def test_temperature_unit_change_resets_calibrations() -> None:
+    payload = bytearray(18)
+    payload[1] = 0
+    payload[2:6] = bytes((10, 20, 30, 40))
+    current = _frame(bytes(payload))
+
+    updated = build_settings_control_frame(current, temperature_unit="F")
+
+    assert updated[1] == 1
+    assert updated[2:6] == b"\x00\x00\x00\x00"
+    assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
+
 def test_build_fan_control_frame_preserves_automatic_control_fields() -> None:
     current = bytearray(_frame(bytes(18)))
     current[6] = 73
