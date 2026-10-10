@@ -164,10 +164,12 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             async with self._io_lock:
                 telemetry_raw = bytes(await client.read_gatt_char(CHAR_TELEMETRY))
                 values = self._decode_telemetry_values(telemetry_raw)
+                values["fff2_raw"] = telemetry_raw.hex()
 
                 try:
                     targets_raw = bytes(await client.read_gatt_char(CHAR_TARGETS))
                     values.update(self._decode_target_values(targets_raw))
+                    values["fff3_raw"] = targets_raw.hex()
                     self._fff3_current = targets_raw
                 except Exception as err:  # noqa: BLE001 - optional read path
                     _LOGGER.debug("ISC-027BW FFF3 read failed: %s", err)
@@ -175,6 +177,7 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
                 try:
                     fan_raw = bytes(await client.read_gatt_char(CHAR_FAN))
                     values.update(self._decode_fan_values(fan_raw))
+                    values["fff1_raw"] = fan_raw.hex()
                     self._fff1_current = fan_raw
                 except Exception as err:  # noqa: BLE001 - optional read path
                     _LOGGER.debug("ISC-027BW FFF1 read failed: %s", err)
