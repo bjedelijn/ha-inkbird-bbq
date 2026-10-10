@@ -89,6 +89,12 @@
       },
       "probe_temperature": {
         "name": "Vleesprobe temperatuur"
+      },
+      "ambient_temperature": {
+        "name": "Omgevingstemperatuur"
+      },
+      "battery_raw": {
+        "name": "Batterij raw"
       }
     },
     "binary_sensor": {
@@ -109,6 +115,9 @@
       },
       "wifi_enabled": {
         "name": "Wi-Fi ingeschakeld"
+      },
+      "charging": {
+        "name": "Opladen"
       }
     },
     "number": {

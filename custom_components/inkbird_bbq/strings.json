@@ -89,6 +89,12 @@
       },
       "probe_temperature": {
         "name": "Probe temperature"
+      },
+      "ambient_temperature": {
+        "name": "Ambient temperature"
+      },
+      "battery_raw": {
+        "name": "Battery raw"
       }
     },
     "binary_sensor": {
@@ -109,6 +115,9 @@
       },
       "wifi_enabled": {
         "name": "Wi-Fi enabled"
+      },
+      "charging": {
+        "name": "Charging"
       }
     },
     "number": {

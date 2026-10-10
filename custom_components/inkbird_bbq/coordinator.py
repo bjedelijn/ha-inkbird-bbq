@@ -48,6 +48,9 @@ from .devices.tnt11b import (
     CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
 )
 from .devices.tnt11b import (
+    SERVICE_UUID as TNT_SERVICE_UUID,
+)
+from .devices.tnt11b import (
     decode_notification as decode_tnt_notification,
 )
 
@@ -56,6 +59,12 @@ _LOGGER = logging.getLogger(__name__)
 _INT14_CURRENT_INFO_REQUEST = bytes.fromhex(
     "02 f1 01 02 f1 03 02 f1 19"
 )
+_INT14_STARTUP_SETTINGS = (
+    ("temperature_unit", bytes.fromhex("01 04")),
+    ("display_brightness", bytes.fromhex("01 06")),
+)
+_STANDARD_BATTERY_LEVEL_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
+
 
 class InkbirdBbqCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Base coordinator for a persistent INKBIRD Bluetooth session."""
@@ -322,6 +331,7 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
             _INT14_CURRENT_INFO_REQUEST,
             response=False,
         )
+        await self._async_read_startup_settings(client)
 
         self._set_available(True)
 
@@ -338,6 +348,46 @@ class Int14bwCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_read_startup_settings(self, client: BleakClient) -> None:
+        """Read user-visible INT-14-BW settings after authentication."""
+        for data_key, request in _INT14_STARTUP_SETTINGS:
+            for attempt in range(3):
+                if data_key in self.data:
+                    break
+
+                await client.write_gatt_char(
+                    CHAR_CONTROL,
+                    request,
+                    response=False,
+                )
+                await asyncio.sleep(0.25)
+
+                try:
+                    raw = bytes(await client.read_gatt_char(CHAR_CONTROL))
+                except Exception as err:  # noqa: BLE001 - optional readback path
+                    _LOGGER.debug(
+                        "INT-14-BW startup read %s attempt %d failed: %s",
+                        data_key,
+                        attempt + 1,
+                        err,
+                    )
+                    continue
+
+                if raw:
+                    _LOGGER.debug(
+                        "INT-14-BW startup read %s attempt %d: %s",
+                        data_key,
+                        attempt + 1,
+                        raw.hex(),
+                    )
+                    self._on_control(None, bytearray(raw))
+
+            if data_key not in self.data:
+                _LOGGER.debug(
+                    "INT-14-BW startup setting %s is still unavailable",
+                    data_key,
+                )
 
     async def _async_write_setting(
         self,
@@ -584,6 +634,7 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
     async def _session(self, client: BleakClient) -> None:
         self._client = client
         await client.start_notify(TNT_CHAR_TEMPERATURE, self._on_temperature)
+        await self._async_collect_gatt_diagnostics(client)
         self._set_available(True)
 
         while client.is_connected and not self._stop.is_set():
@@ -594,6 +645,55 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_collect_gatt_diagnostics(self, client: BleakClient) -> None:
+        """Read safe TNT-11-B GATT values for protocol diagnostics.
+
+        This deliberately performs reads only. It does not write to unknown
+        characteristics while the battery protocol is still being researched.
+        """
+        readable: dict[str, str] = {}
+        properties: dict[str, list[str]] = {}
+
+        for service in client.services:
+            service_uuid = service.uuid.lower()
+
+            for characteristic in service.characteristics:
+                uuid = characteristic.uuid.lower()
+                should_probe = (
+                    service_uuid == TNT_SERVICE_UUID
+                    or uuid == _STANDARD_BATTERY_LEVEL_UUID
+                )
+                if not should_probe:
+                    continue
+
+                characteristic_properties = sorted(characteristic.properties)
+                properties[uuid] = characteristic_properties
+
+                if "read" not in characteristic.properties:
+                    continue
+
+                try:
+                    raw = bytes(await client.read_gatt_char(characteristic))
+                except Exception as err:  # noqa: BLE001 - diagnostic probe only
+                    _LOGGER.debug(
+                        "BG-BT1W diagnostic read %s failed: %s",
+                        uuid,
+                        err,
+                    )
+                    continue
+
+                readable[uuid] = raw.hex()
+                _LOGGER.debug(
+                    "BG-BT1W diagnostic read %s: %s",
+                    uuid,
+                    raw.hex(),
+                )
+
+        self._publish(
+            gatt_characteristic_properties=properties,
+            gatt_read_values=readable,
+        )
 
     def _on_temperature(
         self,
@@ -606,10 +706,17 @@ class Tnt11bCoordinator(InkbirdBbqCoordinator):
             _LOGGER.debug("Ignoring malformed BG-BT1W FF03 frame: %s", err)
             return
 
-        self._publish(
-            probe_temperature=reading.food_temperature,
-            raw_packet=reading.raw.hex(),
-        )
+        values: dict[str, Any] = {
+            "probe_temperature": reading.food_temperature,
+            "raw_packet": reading.raw.hex(),
+        }
+        if reading.ambient_temperature is not None:
+            values["ambient_temperature"] = reading.ambient_temperature
+        if reading.battery_raw is not None:
+            values["battery_raw"] = reading.battery_raw
+            values["charging"] = reading.battery_raw == 0xFF
+
+        self._publish(**values)
         _LOGGER.debug(
             "BG-BT1W FF03 RX: %s -> %.2f C",
             reading.raw.hex(),

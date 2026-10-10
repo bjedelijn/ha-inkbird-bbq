@@ -4,6 +4,16 @@ All notable changes to this project will be documented here.
 
 The project is currently in pre-release development.
 
+## 0.1.0-dev.4
+
+- Physically validated INT-14-BW probe-target writes against both the base display and INKBIRD app.
+- Confirmed target behavior remains correct through C -> F -> C unit switching.
+- Changed INT-14-BW target number entities to follow the device's selected display unit, showing and accepting °C or °F as appropriate.
+- Added startup reads with FF02 readback/retry for temperature unit and display brightness so these controls populate from the device instead of starting as unknown.
+- Confirmed INT-14-BW reconnect after ESPHome Bluetooth Proxy restart.
+- Confirmed INT-14-BW reconnect after Home Assistant restart.
+- Reconfirmed simultaneous Home Assistant BLE operation and INKBIRD app monitoring over Wi-Fi.
+
 ## 0.1.0-dev.3
 
 - Merged the initial integration development branch to \`main\`.

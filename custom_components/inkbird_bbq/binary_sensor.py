@@ -16,7 +16,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
-from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    MODEL_INT_14_BW,
+    MODEL_ISC_027BW,
+    MODEL_TNT_11_B,
+)
 
 if TYPE_CHECKING:
     from .coordinator import InkbirdBbqCoordinator
@@ -48,6 +54,15 @@ INT14BW_BINARY_SENSORS = tuple(
     for probe in range(1, 5)
 )
 
+TNT11B_BINARY_SENSORS = (
+    InkbirdBinarySensorDescription(
+        key="charging",
+        translation_key="charging",
+        data_key="charging",
+        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+    ),
+)
+
 
 async def async_setup_entry(
     hass: Any,
@@ -61,6 +76,8 @@ async def async_setup_entry(
         descriptions = ISC027BW_BINARY_SENSORS
     elif coordinator.model == MODEL_INT_14_BW:
         descriptions = INT14BW_BINARY_SENSORS
+    elif coordinator.model == MODEL_TNT_11_B:
+        descriptions = TNT11B_BINARY_SENSORS
     else:
         descriptions = ()
 

@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -112,6 +112,21 @@ TNT11B_SENSORS: tuple[InkbirdSensorDescription, ...] = (
         data_key="probe_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    InkbirdSensorDescription(
+        key="ambient_temperature",
+        translation_key="ambient_temperature",
+        data_key="ambient_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    InkbirdSensorDescription(
+        key="battery_raw",
+        translation_key="battery_raw",
+        data_key="battery_raw",
+        entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
     ),
 )

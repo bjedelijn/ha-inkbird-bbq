@@ -132,7 +132,7 @@ The current implementation therefore uses:
 - write path: Celsius -> Fahrenheit x10;
 - write verification: compare returned raw target with the expected Fahrenheit x10 value.
 
-This behavior is covered by unit tests and still requires a final physical set/readback confirmation before the target controls are considered fully validated.
+This behavior is covered by unit tests and is now physically confirmed end to end: Celsius targets set in Home Assistant match the physical base and INKBIRD app, and C -> F -> C switching preserves the target correctly.
 
 ### Settings scope
 
@@ -141,6 +141,8 @@ Currently exposed INT controls:
 - temperature unit;
 - display brightness;
 - probe target temperatures 1-4.
+
+Temperature unit and display brightness are explicitly requested after authentication and retried with FF02 readback so their Home Assistant controls can initialize from the current device state.
 
 Earlier experimental Wi-Fi and auto-sleep entities are no longer exposed and are cleaned from the entity registry when encountered from older development builds.
 
