@@ -25,7 +25,13 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
 
     if coordinator.model == MODEL_ISC_027BW:
-        async_add_entities([InkbirdExperimentalSwitch(coordinator, "fan_control")])
+        async_add_entities(
+            [
+                InkbirdExperimentalSwitch(coordinator, "fan_control"),
+                InkbirdExperimentalSwitch(coordinator, "lid_reminder_control"),
+                InkbirdExperimentalSwitch(coordinator, "device_sound_control"),
+            ]
+        )
 
 
 class InkbirdExperimentalSwitch(
@@ -58,7 +64,13 @@ class InkbirdExperimentalSwitch(
 
     @property
     def is_on(self) -> bool | None:
-        data_key = "fan_on" if self._key == "fan_control" else "wifi_enabled"
+        data_key = {
+            "fan_control": "fan_on",
+            "lid_reminder_control": "lid_reminder",
+            "device_sound_control": "device_sound",
+        }.get(self._key)
+        if data_key is None:
+            return None
         value = self.coordinator.data.get(data_key)
         return bool(value) if value is not None else None
 
@@ -68,6 +80,16 @@ class InkbirdExperimentalSwitch(
         ):
             await self.coordinator.async_set_fan_on(True)
             return
+        if self._key == "lid_reminder_control" and isinstance(
+            self.coordinator, Isc027bwCoordinator
+        ):
+            await self.coordinator.async_set_lid_reminder(True)
+            return
+        if self._key == "device_sound_control" and isinstance(
+            self.coordinator, Isc027bwCoordinator
+        ):
+            await self.coordinator.async_set_device_sound(True)
+            return
         raise RuntimeError(f"Unsupported experimental switch: {self._key}")
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -75,6 +97,16 @@ class InkbirdExperimentalSwitch(
             self.coordinator, Isc027bwCoordinator
         ):
             await self.coordinator.async_set_fan_on(False)
+            return
+        if self._key == "lid_reminder_control" and isinstance(
+            self.coordinator, Isc027bwCoordinator
+        ):
+            await self.coordinator.async_set_lid_reminder(False)
+            return
+        if self._key == "device_sound_control" and isinstance(
+            self.coordinator, Isc027bwCoordinator
+        ):
+            await self.coordinator.async_set_device_sound(False)
             return
         raise RuntimeError(f"Unsupported experimental switch: {self._key}")
 
