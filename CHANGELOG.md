@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The project is currently in pre-release development.
 
+## 0.1.0-beta.1
+
+- First HACS-installable beta release.
+- Added full ISC-027BW local control support for temperature unit, pit target, pit high/low alarms, probe alarms, pit/probe calibrations, open-lid reminder, device sound and fan on/off.
+- Added ISC-027BW C/F-aware Home Assistant entities and matched the device's calibration-reset behavior when switching temperature units.
+- Added complete read-only ISC-027BW GATT diagnostics for protocol research.
+- Added INT-14-BW authenticated Bluetooth support with probe temperatures, dock states, battery information, C/F control, display brightness and probe targets.
+- Added TNT-11-B / BG-BT1W support with live probe temperature plus raw battery diagnostics while battery percentage mapping is still being characterized.
+- Added CI, HACS Validation, Security and CodeQL workflows.
+- Added an automated Release workflow that validates the manifest version, runs tests, builds `inkbird_bbq.zip` and publishes a GitHub release. Versions containing a suffix such as `-beta.1` are published as prereleases when triggered by a tag; manual runs can explicitly choose prerelease status.
+
 ## 0.1.0-dev.4
 
 - Physically validated INT-14-BW probe-target writes against both the base display and INKBIRD app.
