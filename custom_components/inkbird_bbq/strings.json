@@ -147,6 +147,24 @@
       },
       "probe_4_target_control": {
         "name": "Set probe 4 target temperature (experimental)"
+      },
+      "pit_high_alarm_control": {
+        "name": "Set pit high alarm (experimental)"
+      },
+      "pit_low_alarm_control": {
+        "name": "Set pit low alarm (experimental)"
+      },
+      "pit_calibration_control": {
+        "name": "Set pit calibration (experimental)"
+      },
+      "probe_1_calibration_control": {
+        "name": "Set probe 1 calibration (experimental)"
+      },
+      "probe_2_calibration_control": {
+        "name": "Set probe 2 calibration (experimental)"
+      },
+      "probe_3_calibration_control": {
+        "name": "Set probe 3 calibration (experimental)"
       }
     },
     "select": {
@@ -157,6 +175,12 @@
     "switch": {
       "fan_control": {
         "name": "Fan control (experimental)"
+      },
+      "lid_reminder_control": {
+        "name": "Open-lid reminder (experimental)"
+      },
+      "device_sound_control": {
+        "name": "Device sound (experimental)"
       }
     }
   }
