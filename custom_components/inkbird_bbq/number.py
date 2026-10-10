@@ -76,6 +76,44 @@ ISC027BW_NUMBERS = (
         mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
     ),
+    InkbirdNumberDescription(
+        key="pit_high_alarm_control",
+        translation_key="pit_high_alarm_control",
+        data_key="pit_high_alarm",
+        native_min_value=20,
+        native_max_value=300,
+        native_step=1,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        mode=NumberMode.BOX,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    InkbirdNumberDescription(
+        key="pit_low_alarm_control",
+        translation_key="pit_low_alarm_control",
+        data_key="pit_low_alarm",
+        native_min_value=20,
+        native_max_value=300,
+        native_step=1,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        mode=NumberMode.BOX,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    *(
+        InkbirdNumberDescription(
+            key=f"{key}_calibration_control",
+            translation_key=f"{key}_calibration_control",
+            data_key=f"{key}_calibration",
+            native_min_value=-12.8,
+            native_max_value=12.7,
+            native_step=0.1,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            mode=NumberMode.BOX,
+            entity_category=EntityCategory.CONFIG,
+        )
+        for key in ("pit", "probe_1", "probe_2", "probe_3")
+    ),
     *(
         InkbirdNumberDescription(
             key=f"probe_{probe}_alarm_control",
@@ -214,6 +252,16 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
         if isinstance(self.coordinator, Isc027bwCoordinator):
             if key == "pit_target_control":
                 await self.coordinator.async_set_pit_target(value)
+                return
+            if key == "pit_high_alarm_control":
+                await self.coordinator.async_set_pit_high_alarm(value)
+                return
+            if key == "pit_low_alarm_control":
+                await self.coordinator.async_set_pit_low_alarm(value)
+                return
+            if key.endswith("_calibration_control"):
+                calibration_key = key.removesuffix("_calibration_control")
+                await self.coordinator.async_set_calibration(calibration_key, value)
                 return
             if key.startswith("probe_") and key.endswith("_alarm_control"):
                 probe = int(key.split("_")[1])
