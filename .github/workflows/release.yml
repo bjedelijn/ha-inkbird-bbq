@@ -1,27 +1,20 @@
-name: Release
+name: Publish release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version, for example v0.1.0-beta.1"
-        required: true
-        type: string
-      prerelease:
-        description: "Publish as prerelease"
-        required: true
-        default: true
-        type: boolean
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+    paths:
+      - custom_components/inkbird_bbq/manifest.json
+      - .github/workflows/release.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Publish GitHub release
+    name: Publish version tag and release
     runs-on: ubuntu-latest
 
     steps:
@@ -30,46 +23,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve release version
+      - name: Read integration version
         id: version
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            version="${{ inputs.version }}"
-          else
-            version="${GITHUB_REF_NAME}"
-          fi
-
-          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Invalid version: $version" >&2
-            exit 1
-          fi
-
-          echo "tag=$version" >> "$GITHUB_OUTPUT"
-          echo "version=${version#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Validate manifest version
-        env:
-          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          python - <<'PY'
+          VERSION="$(python - <<'PY'
           import json
-          import os
           from pathlib import Path
 
-          manifest = json.loads(
+          data = json.loads(
               Path("custom_components/inkbird_bbq/manifest.json").read_text(
                   encoding="utf-8"
               )
           )
-          actual = manifest["version"]
-          expected = os.environ["EXPECTED_VERSION"]
-          if actual != expected:
-              raise SystemExit(
-                  f"manifest version {actual!r} does not match release {expected!r}"
-              )
-          print(f"OK manifest version {actual}")
+          print(data["version"])
           PY
+          )"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid manifest version: $VERSION" >&2
+            exit 1
+          fi
 
       - name: Run release validation
         run: |
@@ -84,37 +65,30 @@ jobs:
         run: |
           mkdir -p dist
           cd custom_components/inkbird_bbq
-          zip -r "../../dist/inkbird_bbq.zip" .             -x "__pycache__/*" "*.pyc"
+          zip -r "../../dist/inkbird_bbq.zip" . \
+            -x "__pycache__/*" "*.pyc"
           cd ../..
           test -s dist/inkbird_bbq.zip
 
-      - name: Determine prerelease flag
-        id: prerelease
-        shell: bash
-        run: |
-          tag="${{ steps.version.outputs.tag }}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ "${{ inputs.prerelease }}" = "true" ]; then
-              echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
-            else
-              echo "flag=" >> "$GITHUB_OUTPUT"
-            fi
-          elif [[ "$tag" == *-* ]]; then
-            echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
-          else
-            echo "flag=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Publish release
+      - name: Publish GitHub release if tag is new
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-          PRERELEASE_FLAG: ${{ steps.prerelease.outputs.flag }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; refusing to overwrite." >&2
-            exit 1
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists; nothing to publish."
+            exit 0
           fi
 
-          gh release create "$TAG" dist/inkbird_bbq.zip             --target "${GITHUB_SHA}"             --title "$TAG"             --generate-notes             $PRERELEASE_FLAG
+          prerelease_flag=""
+          if [[ "$VERSION" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+
+          gh release create "$TAG" dist/inkbird_bbq.zip \
+            --target "$GITHUB_SHA" \
+            --title "INKBIRD BBQ $VERSION" \
+            --generate-notes \
+            $prerelease_flag
