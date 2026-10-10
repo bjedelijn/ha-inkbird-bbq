@@ -233,9 +233,47 @@ class InkbirdBbqSensor(
         return bool(self.coordinator.data.get("available"))
 
     @property
+    def _is_isc_temperature(self) -> bool:
+        return (
+            self.coordinator.model == MODEL_ISC_027BW
+            and self.entity_description.native_unit_of_measurement
+            == UnitOfTemperature.CELSIUS
+        )
+
+    @property
+    def _uses_fahrenheit(self) -> bool:
+        return self._is_isc_temperature and self.coordinator.data.get(
+            "temperature_unit"
+        ) == "F"
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        if self._is_isc_temperature:
+            return (
+                UnitOfTemperature.FAHRENHEIT
+                if self._uses_fahrenheit
+                else UnitOfTemperature.CELSIUS
+            )
+        return self.entity_description.native_unit_of_measurement
+
+    @property
+    def device_class(self) -> SensorDeviceClass | None:
+        # Keep the ISC display tied to the device C/F setting instead of
+        # Home Assistant's global temperature-unit conversion.
+        if self._is_isc_temperature:
+            return None
+        return self.entity_description.device_class
+
+    @property
     def native_value(self) -> Any:
         """Return the latest decoded value."""
-        return self.coordinator.data.get(self.entity_description.data_key)
+        value = self.coordinator.data.get(self.entity_description.data_key)
+        if (
+            self._uses_fahrenheit
+            and isinstance(value, int | float)
+        ):
+            return round(float(value) * 9.0 / 5.0 + 32.0, 1)
+        return value
 
     @callback
     def _handle_coordinator_update(self) -> None:
