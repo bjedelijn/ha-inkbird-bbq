@@ -4,6 +4,13 @@ All notable changes to this project will be documented here.
 
 The project is currently in pre-release development.
 
+## 0.1.0-beta.2
+
+- Refresh INKBIRD BBQ branding for Home Assistant and HACS.
+- Add consistent integration branding assets for light and dark UI use.
+- Prepare model-specific artwork for ISC-027BW, INT-14-BW and TNT-11-B / BG-BT1W.
+- Keep all protocol, control and C/F behavior from beta.1 unchanged.
+
 ## 0.1.0-beta.1
 
 - First HACS-installable beta release.
