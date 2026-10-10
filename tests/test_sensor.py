@@ -17,6 +17,8 @@ def test_int14bw_omits_unreliable_read_settings_sensors() -> None:
 
 def test_tnt11b_exposes_raw_battery_as_diagnostic_sensor() -> None:
     battery = next(
-        description for description in TNT11B_SENSORS if description.key == "battery_raw"
+        description
+        for description in TNT11B_SENSORS
+        if description.key == "battery_raw"
     )
     assert battery.entity_category is EntityCategory.DIAGNOSTIC
