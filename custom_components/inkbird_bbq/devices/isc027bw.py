@@ -185,6 +185,10 @@ def build_settings_control_frame(
         if normalized not in {"C", "F"}:
             raise ValueError("Temperature unit must be C or F")
         payload[1] = 0 if normalized == "C" else 1
+        # The vendor app/device resets all temperature calibrations when
+        # switching between C and F. Mirror that behavior to avoid the app
+        # and Home Assistant fighting over stale calibration bytes.
+        payload[2:6] = b"\x00\x00\x00\x00"
 
     if calibrations:
         offsets = {
