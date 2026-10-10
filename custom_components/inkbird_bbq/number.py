@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.number import (
-    NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
     NumberMode,
@@ -72,7 +71,6 @@ ISC027BW_NUMBERS = (
         native_max_value=300,
         native_step=1,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=NumberDeviceClass.TEMPERATURE,
         mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
     ),
@@ -84,7 +82,6 @@ ISC027BW_NUMBERS = (
         native_max_value=300,
         native_step=1,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=NumberDeviceClass.TEMPERATURE,
         mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
     ),
@@ -96,7 +93,6 @@ ISC027BW_NUMBERS = (
         native_max_value=300,
         native_step=1,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=NumberDeviceClass.TEMPERATURE,
         mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
     ),
@@ -123,8 +119,7 @@ ISC027BW_NUMBERS = (
             native_max_value=300,
             native_step=1,
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            device_class=NumberDeviceClass.TEMPERATURE,
-            mode=NumberMode.BOX,
+                mode=NumberMode.BOX,
             entity_category=EntityCategory.CONFIG,
         )
         for probe in range(1, 4)
