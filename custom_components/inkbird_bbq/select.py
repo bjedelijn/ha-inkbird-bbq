@@ -12,8 +12,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import InkbirdBbqConfigEntry
-from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW
-from .coordinator import InkbirdBbqCoordinator, Int14bwCoordinator
+from .const import DOMAIN, MANUFACTURER, MODEL_INT_14_BW, MODEL_ISC_027BW
+from .coordinator import (
+    InkbirdBbqCoordinator,
+    Int14bwCoordinator,
+    Isc027bwCoordinator,
+)
 
 
 async def async_setup_entry(
@@ -23,7 +27,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the temperature-unit control."""
     coordinator = entry.runtime_data
-    if coordinator.model == MODEL_INT_14_BW:
+    if coordinator.model in (MODEL_INT_14_BW, MODEL_ISC_027BW):
         async_add_entities([InkbirdTemperatureUnitSelect(coordinator)])
 
 
@@ -31,7 +35,7 @@ class InkbirdTemperatureUnitSelect(
     CoordinatorEntity[InkbirdBbqCoordinator],
     SelectEntity,
 ):
-    """Experimental C/F selector for INT-14-BW."""
+    """Experimental C/F selector for supported INKBIRD devices."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "temperature_unit_control"
@@ -65,10 +69,11 @@ class InkbirdTemperatureUnitSelect(
         return None
 
     async def async_select_option(self, option: str) -> None:
-        if not isinstance(self.coordinator, Int14bwCoordinator):
-            raise RuntimeError("Temperature-unit control is only valid for INT-14-BW")
         unit = "C" if option == "Celsius" else "F"
-        await self.coordinator.async_set_temperature_unit(unit)
+        if isinstance(self.coordinator, (Int14bwCoordinator, Isc027bwCoordinator)):
+            await self.coordinator.async_set_temperature_unit(unit)
+            return
+        raise RuntimeError("Temperature-unit control is not supported for this model")
 
     @callback
     def _handle_coordinator_update(self) -> None:

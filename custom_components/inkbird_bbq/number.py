@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.number import (
-    NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
     NumberMode,
@@ -72,9 +71,44 @@ ISC027BW_NUMBERS = (
         native_max_value=300,
         native_step=1,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=NumberDeviceClass.TEMPERATURE,
         mode=NumberMode.BOX,
         entity_category=EntityCategory.CONFIG,
+    ),
+    InkbirdNumberDescription(
+        key="pit_high_alarm_control",
+        translation_key="pit_high_alarm_control",
+        data_key="pit_high_alarm",
+        native_min_value=20,
+        native_max_value=300,
+        native_step=1,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    InkbirdNumberDescription(
+        key="pit_low_alarm_control",
+        translation_key="pit_low_alarm_control",
+        data_key="pit_low_alarm",
+        native_min_value=20,
+        native_max_value=300,
+        native_step=1,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+        entity_category=EntityCategory.CONFIG,
+    ),
+    *(
+        InkbirdNumberDescription(
+            key=f"{key}_calibration_control",
+            translation_key=f"{key}_calibration_control",
+            data_key=f"{key}_calibration",
+            native_min_value=-12.8,
+            native_max_value=12.7,
+            native_step=0.1,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            mode=NumberMode.BOX,
+            entity_category=EntityCategory.CONFIG,
+        )
+        for key in ("pit", "probe_1", "probe_2", "probe_3")
     ),
     *(
         InkbirdNumberDescription(
@@ -85,8 +119,7 @@ ISC027BW_NUMBERS = (
             native_max_value=300,
             native_step=1,
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-            device_class=NumberDeviceClass.TEMPERATURE,
-            mode=NumberMode.BOX,
+                mode=NumberMode.BOX,
             entity_category=EntityCategory.CONFIG,
         )
         for probe in range(1, 4)
@@ -150,14 +183,33 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
         )
 
     @property
+    def _is_isc_temperature_control(self) -> bool:
+        return isinstance(self.coordinator, Isc027bwCoordinator) and (
+            self.entity_description.key == "pit_target_control"
+            or self.entity_description.key in {
+                "pit_high_alarm_control",
+                "pit_low_alarm_control",
+            }
+            or self.entity_description.key.endswith("_alarm_control")
+            or self.entity_description.key.endswith("_calibration_control")
+        )
+
+    @property
+    def _is_isc_calibration(self) -> bool:
+        return (
+            isinstance(self.coordinator, Isc027bwCoordinator)
+            and self.entity_description.key.endswith("_calibration_control")
+        )
+
+    @property
     def _uses_fahrenheit(self) -> bool:
-        return self._is_int14_target and self.coordinator.data.get(
-            "temperature_unit"
-        ) == "F"
+        return (
+            self._is_int14_target or self._is_isc_temperature_control
+        ) and self.coordinator.data.get("temperature_unit") == "F"
 
     @property
     def native_unit_of_measurement(self) -> str | None:
-        if self._is_int14_target:
+        if self._is_int14_target or self._is_isc_temperature_control:
             return (
                 UnitOfTemperature.FAHRENHEIT
                 if self._uses_fahrenheit
@@ -169,12 +221,16 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
     def native_min_value(self) -> float:
         if self._is_int14_target:
             return 32.0 if self._uses_fahrenheit else 0.0
+        if self._is_isc_temperature_control and not self._is_isc_calibration:
+            return 68.0 if self._uses_fahrenheit else 20.0
         return self.entity_description.native_min_value or 0.0
 
     @property
     def native_max_value(self) -> float:
         if self._is_int14_target:
             return 212.0 if self._uses_fahrenheit else 100.0
+        if self._is_isc_temperature_control and not self._is_isc_calibration:
+            return 572.0 if self._uses_fahrenheit else 300.0
         return self.entity_description.native_max_value or 100.0
 
     @property
@@ -188,7 +244,7 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
         value = self.coordinator.data.get(self.entity_description.data_key)
         if not isinstance(value, int | float):
             return None
-        if self._uses_fahrenheit:
+        if self._uses_fahrenheit and not self._is_isc_calibration:
             return round(float(value) * 9.0 / 5.0 + 32.0, 1)
         return float(value)
 
@@ -212,12 +268,27 @@ class InkbirdBbqNumber(CoordinatorEntity[InkbirdBbqCoordinator], NumberEntity):
                 )
                 return
         if isinstance(self.coordinator, Isc027bwCoordinator):
+            target_value = (
+                (value - 32.0) * 5.0 / 9.0
+                if self._uses_fahrenheit and not self._is_isc_calibration
+                else value
+            )
             if key == "pit_target_control":
-                await self.coordinator.async_set_pit_target(value)
+                await self.coordinator.async_set_pit_target(target_value)
+                return
+            if key == "pit_high_alarm_control":
+                await self.coordinator.async_set_pit_high_alarm(target_value)
+                return
+            if key == "pit_low_alarm_control":
+                await self.coordinator.async_set_pit_low_alarm(target_value)
+                return
+            if key.endswith("_calibration_control"):
+                calibration_key = key.removesuffix("_calibration_control")
+                await self.coordinator.async_set_calibration(calibration_key, value)
                 return
             if key.startswith("probe_") and key.endswith("_alarm_control"):
                 probe = int(key.split("_")[1])
-                await self.coordinator.async_set_probe_alarm(probe, value)
+                await self.coordinator.async_set_probe_alarm(probe, target_value)
                 return
 
         raise RuntimeError(f"Unsupported experimental number control: {key}")

@@ -40,9 +40,14 @@ from .devices.isc027bw import (
     CHAR_TARGETS,
     CHAR_TELEMETRY,
     build_fan_control_frame,
+    build_settings_control_frame,
     build_target_control_frame,
+    decode_settings,
     decode_targets,
     decode_telemetry,
+)
+from .devices.isc027bw import (
+    SERVICE_UUID as ISC_SERVICE_UUID,
 )
 from .devices.tnt11b import (
     CHAR_TEMPERATURE as TNT_CHAR_TEMPERATURE,
@@ -158,16 +163,19 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
     async def _session(self, client: BleakClient) -> None:
         self._client = client
+        await self._async_collect_gatt_diagnostics(client)
         self._set_available(True)
 
         async def _read_once() -> None:
             async with self._io_lock:
                 telemetry_raw = bytes(await client.read_gatt_char(CHAR_TELEMETRY))
                 values = self._decode_telemetry_values(telemetry_raw)
+                values["fff2_raw"] = telemetry_raw.hex()
 
                 try:
                     targets_raw = bytes(await client.read_gatt_char(CHAR_TARGETS))
                     values.update(self._decode_target_values(targets_raw))
+                    values["fff3_raw"] = targets_raw.hex()
                     self._fff3_current = targets_raw
                 except Exception as err:  # noqa: BLE001 - optional read path
                     _LOGGER.debug("ISC-027BW FFF3 read failed: %s", err)
@@ -175,6 +183,7 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
                 try:
                     fan_raw = bytes(await client.read_gatt_char(CHAR_FAN))
                     values.update(self._decode_fan_values(fan_raw))
+                    values["fff1_raw"] = fan_raw.hex()
                     self._fff1_current = fan_raw
                 except Exception as err:  # noqa: BLE001 - optional read path
                     _LOGGER.debug("ISC-027BW FFF1 read failed: %s", err)
@@ -190,6 +199,50 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_collect_gatt_diagnostics(self, client: BleakClient) -> None:
+        """Read the complete ISC-027BW GATT table without unknown writes."""
+        readable: dict[str, str] = {}
+        properties: dict[str, list[str]] = {}
+        services: dict[str, list[str]] = {}
+
+        for service in client.services:
+            service_uuid = service.uuid.lower()
+            characteristic_uuids: list[str] = []
+
+            for characteristic in service.characteristics:
+                uuid = characteristic.uuid.lower()
+                characteristic_uuids.append(uuid)
+                properties[uuid] = sorted(characteristic.properties)
+
+                if "read" not in characteristic.properties:
+                    continue
+
+                try:
+                    raw = bytes(await client.read_gatt_char(characteristic))
+                except Exception as err:  # noqa: BLE001 - diagnostic probe only
+                    _LOGGER.debug(
+                        "ISC-027BW diagnostic read %s failed: %s",
+                        uuid,
+                        err,
+                    )
+                    continue
+
+                readable[uuid] = raw.hex()
+                _LOGGER.debug(
+                    "ISC-027BW diagnostic read %s: %s",
+                    uuid,
+                    raw.hex(),
+                )
+
+            services[service_uuid] = characteristic_uuids
+
+        self._publish(
+            gatt_services=services,
+            gatt_characteristic_properties=properties,
+            gatt_read_values=readable,
+            isc_service_uuid=ISC_SERVICE_UUID,
+        )
 
     @staticmethod
     def _decode_telemetry_values(data: bytes) -> dict[str, Any]:
@@ -209,6 +262,8 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
         targets = decode_targets(data)
         return {
             "pit_target": targets.pit_target,
+            "pit_high_alarm": targets.pit_high_alarm,
+            "pit_low_alarm": targets.pit_low_alarm,
             "meat_probe_1_alarm": targets.meat_probe_1_alarm,
             "meat_probe_2_alarm": targets.meat_probe_2_alarm,
             "meat_probe_3_alarm": targets.meat_probe_3_alarm,
@@ -216,10 +271,22 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
     @staticmethod
     def _decode_fan_values(data: bytes) -> dict[str, Any]:
-        """Decode fan state and configured fan setpoint from FFF1."""
+        """Decode confirmed local settings from FFF1."""
         if not data:
             return {}
-        return {"fan_on": bool(data[0])}
+        if len(data) != 20:
+            return {"fan_on": bool(data[0])}
+        settings = decode_settings(data)
+        return {
+            "fan_on": settings.fan_on,
+            "temperature_unit": settings.temperature_unit,
+            "pit_calibration": settings.pit_calibration,
+            "probe_1_calibration": settings.probe_1_calibration,
+            "probe_2_calibration": settings.probe_2_calibration,
+            "probe_3_calibration": settings.probe_3_calibration,
+            "lid_reminder": settings.lid_reminder,
+            "device_sound": settings.device_sound,
+        }
 
     async def async_set_fan_on(self, fan_on: bool) -> None:
         """Experimentally set ISC-027BW fan on/off and verify by readback."""
@@ -235,9 +302,45 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             self._fff1_current = readback
             self._publish(**self._decode_fan_values(readback))
 
+    async def async_set_temperature_unit(self, unit: str) -> None:
+        """Set ISC-027BW temperature unit and verify by readback."""
+        await self._async_set_settings(temperature_unit=unit)
+
+    async def async_set_calibration(self, key: str, value: float) -> None:
+        """Set one ISC-027BW calibration and verify by readback."""
+        await self._async_set_settings(calibrations={key: value})
+
+    async def async_set_lid_reminder(self, enabled: bool) -> None:
+        """Set ISC-027BW open-lid reminder and verify by readback."""
+        await self._async_set_settings(lid_reminder=enabled)
+
+    async def async_set_device_sound(self, enabled: bool) -> None:
+        """Set ISC-027BW device sound and verify by readback."""
+        await self._async_set_settings(device_sound=enabled)
+
+    async def _async_set_settings(self, **changes: Any) -> None:
+        client = self._require_client()
+        async with self._io_lock:
+            current = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = current
+            frame = build_settings_control_frame(current, **changes)
+            await client.write_gatt_char(CHAR_FAN, frame, response=True)
+            await asyncio.sleep(0.25)
+            readback = bytes(await client.read_gatt_char(CHAR_FAN))
+            self._fff1_current = readback
+            self._publish(**self._decode_fan_values(readback))
+
     async def async_set_pit_target(self, value: float) -> None:
         """Experimentally set ISC-027BW pit target and verify by readback."""
         await self._async_set_target(pit_target=value)
+
+    async def async_set_pit_high_alarm(self, value: float) -> None:
+        """Set ISC-027BW pit high alarm and verify by readback."""
+        await self._async_set_target(pit_high_alarm=value)
+
+    async def async_set_pit_low_alarm(self, value: float) -> None:
+        """Set ISC-027BW pit low alarm and verify by readback."""
+        await self._async_set_target(pit_low_alarm=value)
 
     async def async_set_probe_alarm(self, probe: int, value: float) -> None:
         """Experimentally set an ISC-027BW probe alarm and verify by readback."""
@@ -247,6 +350,8 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
         self,
         *,
         pit_target: float | None = None,
+        pit_high_alarm: float | None = None,
+        pit_low_alarm: float | None = None,
         probe_alarms: dict[int, float] | None = None,
     ) -> None:
         client = self._require_client()
@@ -257,6 +362,8 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
             frame = build_target_control_frame(
                 current,
                 pit_target=pit_target,
+                pit_high_alarm=pit_high_alarm,
+                pit_low_alarm=pit_low_alarm,
                 probe_alarms=probe_alarms,
             )
             await client.write_gatt_char(CHAR_TARGETS, frame, response=True)

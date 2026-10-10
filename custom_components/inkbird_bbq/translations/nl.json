@@ -147,6 +147,24 @@
       },
       "probe_4_target_control": {
         "name": "Doeltemperatuur probe 4 instellen (experimenteel)"
+      },
+      "pit_high_alarm_control": {
+        "name": "Kamado hoog alarm instellen (experimenteel)"
+      },
+      "pit_low_alarm_control": {
+        "name": "Kamado laag alarm instellen (experimenteel)"
+      },
+      "pit_calibration_control": {
+        "name": "Kamado kalibratie instellen (experimenteel)"
+      },
+      "probe_1_calibration_control": {
+        "name": "Probe 1 kalibratie instellen (experimenteel)"
+      },
+      "probe_2_calibration_control": {
+        "name": "Probe 2 kalibratie instellen (experimenteel)"
+      },
+      "probe_3_calibration_control": {
+        "name": "Probe 3 kalibratie instellen (experimenteel)"
       }
     },
     "select": {
@@ -157,6 +175,12 @@
     "switch": {
       "fan_control": {
         "name": "Ventilator bediening (experimenteel)"
+      },
+      "lid_reminder_control": {
+        "name": "Open-dekselherinnering (experimenteel)"
+      },
+      "device_sound_control": {
+        "name": "Apparaatgeluid (experimenteel)"
       }
     }
   }

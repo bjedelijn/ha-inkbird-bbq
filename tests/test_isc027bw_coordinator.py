@@ -38,12 +38,16 @@ def test_telemetry_values_map_to_entities() -> None:
 def test_target_values_map_to_entities() -> None:
     payload = bytearray(18)
     struct.pack_into("<H", payload, 0, 2570)
+    struct.pack_into("<H", payload, 2, 3038)
     struct.pack_into("<H", payload, 4, 1454)
     struct.pack_into("<H", payload, 6, 1580)
     struct.pack_into("<H", payload, 8, 0xFFFE)
+    struct.pack_into("<H", payload, 10, 698)
 
     assert Isc027bwCoordinator._decode_target_values(_frame(payload)) == {
         "pit_target": 125.0,
+        "pit_high_alarm": 151.0,
+        "pit_low_alarm": 21.0,
         "meat_probe_1_alarm": 63.0,
         "meat_probe_2_alarm": 70.0,
         "meat_probe_3_alarm": None,

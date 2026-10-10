@@ -219,3 +219,63 @@ async def test_tnt_gatt_diagnostics_reads_only_readable_vendor_characteristics(
     assert published[-1]["gatt_characteristic_properties"][write_only.uuid] == [
         "write"
     ]
+
+
+@pytest.mark.asyncio
+async def test_isc_gatt_diagnostics_reads_all_readable_characteristics() -> None:
+    from custom_components.inkbird_bbq.coordinator import Isc027bwCoordinator
+    from custom_components.inkbird_bbq.devices.isc027bw import SERVICE_UUID
+
+    coordinator = object.__new__(Isc027bwCoordinator)
+    coordinator.data = {}
+    published: list[dict[str, Any]] = []
+
+    def _publish(**values: Any) -> None:
+        coordinator.data.update(values)
+        published.append(values)
+
+    coordinator._publish = _publish
+
+    readable_vendor = MagicMock()
+    readable_vendor.uuid = "0000fff4-0000-1000-8000-00805f9b34fb"
+    readable_vendor.properties = ["read", "notify"]
+
+    write_only_vendor = MagicMock()
+    write_only_vendor.uuid = "0000fff5-0000-1000-8000-00805f9b34fb"
+    write_only_vendor.properties = ["write"]
+
+    readable_other = MagicMock()
+    readable_other.uuid = "00002a00-0000-1000-8000-00805f9b34fb"
+    readable_other.properties = ["read"]
+
+    vendor_service = MagicMock()
+    vendor_service.uuid = SERVICE_UUID
+    vendor_service.characteristics = [readable_vendor, write_only_vendor]
+
+    generic_service = MagicMock()
+    generic_service.uuid = "00001800-0000-1000-8000-00805f9b34fb"
+    generic_service.characteristics = [readable_other]
+
+    client = MagicMock()
+    client.services = [vendor_service, generic_service]
+    client.read_gatt_char = AsyncMock(
+        side_effect=[bytes.fromhex("0102"), b"S27"]
+    )
+
+    await coordinator._async_collect_gatt_diagnostics(client)
+
+    assert [call.args[0] for call in client.read_gatt_char.await_args_list] == [
+        readable_vendor,
+        readable_other,
+    ]
+    assert published[-1]["gatt_read_values"] == {
+        readable_vendor.uuid: "0102",
+        readable_other.uuid: "533237",
+    }
+    assert published[-1]["gatt_characteristic_properties"][
+        write_only_vendor.uuid
+    ] == ["write"]
+    assert published[-1]["gatt_services"][SERVICE_UUID] == [
+        readable_vendor.uuid,
+        write_only_vendor.uuid,
+    ]

@@ -9,9 +9,11 @@ import pytest
 from custom_components.inkbird_bbq.devices.isc027bw import (
     InvalidFrameError,
     build_fan_control_frame,
+    build_settings_control_frame,
     build_target_control_frame,
     celsius_to_fahrenheit10,
     crc16_modbus,
+    decode_settings,
     decode_targets,
     decode_telemetry,
     fahrenheit10_to_celsius,
@@ -65,13 +67,17 @@ def test_decode_targets() -> None:
     """FFF3 target and meat-probe alarms should decode read-only."""
     payload = bytearray(18)
     struct.pack_into("<H", payload, 0, 2570)  # 257 F = 125 C
+    struct.pack_into("<H", payload, 2, 3038)  # 303.8 F = 151 C
     struct.pack_into("<H", payload, 4, 1454)  # 145.4 F = 63 C
     struct.pack_into("<H", payload, 6, 1580)  # 158 F = 70 C
     struct.pack_into("<H", payload, 8, 0xFFFE)
+    struct.pack_into("<H", payload, 10, 698)  # 69.8 F = 21 C
 
     decoded = decode_targets(_frame(bytes(payload)))
 
     assert decoded.pit_target == 125.0
+    assert decoded.pit_high_alarm == 151.0
+    assert decoded.pit_low_alarm == 21.0
     assert decoded.meat_probe_1_alarm == 63.0
     assert decoded.meat_probe_2_alarm == 70.0
     assert decoded.meat_probe_3_alarm is None
@@ -93,6 +99,64 @@ def test_bad_length_is_rejected() -> None:
 
 
 
+
+def test_decode_settings_maps_confirmed_fff1_fields() -> None:
+    payload = bytearray(18)
+    payload[0] = 1
+    payload[1] = 1
+    struct.pack_into("<b", payload, 2, 10)
+    struct.pack_into("<b", payload, 3, -10)
+    struct.pack_into("<b", payload, 4, 5)
+    struct.pack_into("<b", payload, 5, -5)
+    payload[6] = 1
+    payload[7] = 0
+
+    decoded = decode_settings(_frame(bytes(payload)))
+
+    assert decoded.fan_on is True
+    assert decoded.temperature_unit == "F"
+    assert decoded.pit_calibration == 1.0
+    assert decoded.probe_1_calibration == -1.0
+    assert decoded.probe_2_calibration == 0.5
+    assert decoded.probe_3_calibration == -0.5
+    assert decoded.lid_reminder is True
+    assert decoded.device_sound is False
+
+
+def test_build_settings_control_frame_preserves_unknown_fields() -> None:
+    payload = bytearray(18)
+    payload[8] = 0x71
+    current = _frame(bytes(payload))
+
+    updated = build_settings_control_frame(
+        current,
+        temperature_unit="F",
+        calibrations={"pit": 1.0, "probe_3": -1.0},
+        lid_reminder=True,
+        device_sound=True,
+    )
+
+    assert updated[1] == 1
+    assert struct.unpack_from("<b", updated, 2)[0] == 10
+    assert struct.unpack_from("<b", updated, 5)[0] == -10
+    assert updated[6] == 1
+    assert updated[7] == 1
+    assert updated[8] == 0x71
+    assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
+
+
+def test_temperature_unit_change_resets_calibrations() -> None:
+    payload = bytearray(18)
+    payload[1] = 0
+    payload[2:6] = bytes((10, 20, 30, 40))
+    current = _frame(bytes(payload))
+
+    updated = build_settings_control_frame(current, temperature_unit="F")
+
+    assert updated[1] == 1
+    assert updated[2:6] == b"\x00\x00\x00\x00"
+    assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
+
 def test_build_fan_control_frame_preserves_automatic_control_fields() -> None:
     current = bytearray(_frame(bytes(18)))
     current[6] = 73
@@ -109,11 +173,15 @@ def test_build_target_control_frame_sets_pit_and_probe_alarm() -> None:
     updated = build_target_control_frame(
         current,
         pit_target=110.0,
+        pit_high_alarm=151.0,
+        pit_low_alarm=21.0,
         probe_alarms={1: 75.0},
     )
 
     assert struct.unpack_from("<H", updated, 0)[0] == 2300
+    assert struct.unpack_from("<H", updated, 2)[0] == 3038
     assert struct.unpack_from("<H", updated, 4)[0] == 1670
+    assert struct.unpack_from("<H", updated, 10)[0] == 698
     assert struct.unpack_from("<H", updated, 18)[0] == crc16_modbus(updated[:18])
 
 

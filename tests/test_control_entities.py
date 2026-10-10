@@ -26,6 +26,12 @@ def test_control_number_sets_are_model_specific() -> None:
     }
     assert {item.key for item in ISC027BW_NUMBERS} == {
         "pit_target_control",
+        "pit_high_alarm_control",
+        "pit_low_alarm_control",
+        "pit_calibration_control",
+        "probe_1_calibration_control",
+        "probe_2_calibration_control",
+        "probe_3_calibration_control",
         "probe_1_alarm_control",
         "probe_2_alarm_control",
         "probe_3_alarm_control",
