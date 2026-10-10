@@ -13,7 +13,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/bjedelijn/ha-inkbird-bbq/issues",
   "requirements": [],
-  "version": "0.1.0-dev.4",
+  "version": "0.1.0-beta.1",
   "bluetooth": [
     {
       "local_name": "ISC-027BW"
