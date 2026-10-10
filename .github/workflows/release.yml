@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example v0.1.0-beta.1"
+        required: true
+        type: string
+      prerelease:
+        description: "Publish as prerelease"
+        required: true
+        default: true
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $version" >&2
+            exit 1
+          fi
+
+          echo "tag=$version" >> "$GITHUB_OUTPUT"
+          echo "version=${version#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate manifest version
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("custom_components/inkbird_bbq/manifest.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          actual = manifest["version"]
+          expected = os.environ["EXPECTED_VERSION"]
+          if actual != expected:
+              raise SystemExit(
+                  f"manifest version {actual!r} does not match release {expected!r}"
+              )
+          print(f"OK manifest version {actual}")
+          PY
+
+      - name: Run release validation
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install homeassistant pytest pytest-asyncio ruff PyYAML
+          python -m compileall -q custom_components tests
+          ruff check custom_components tests
+          pytest -q
+
+      - name: Build HACS release archive
+        shell: bash
+        run: |
+          mkdir -p dist
+          cd custom_components/inkbird_bbq
+          zip -r "../../dist/inkbird_bbq.zip" .             -x "__pycache__/*" "*.pyc"
+          cd ../..
+          test -s dist/inkbird_bbq.zip
+
+      - name: Determine prerelease flag
+        id: prerelease
+        shell: bash
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.prerelease }}" = "true" ]; then
+              echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
+            else
+              echo "flag=" >> "$GITHUB_OUTPUT"
+            fi
+          elif [[ "$tag" == *-* ]]; then
+            echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE_FLAG: ${{ steps.prerelease.outputs.flag }}
+        shell: bash
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite." >&2
+            exit 1
+          fi
+
+          gh release create "$TAG" dist/inkbird_bbq.zip             --target "${GITHUB_SHA}"             --title "$TAG"             --generate-notes             $PRERELEASE_FLAG
