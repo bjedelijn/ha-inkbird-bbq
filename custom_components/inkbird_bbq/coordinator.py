@@ -39,6 +39,7 @@ from .devices.isc027bw import (
     CHAR_FAN,
     CHAR_TARGETS,
     CHAR_TELEMETRY,
+    SERVICE_UUID as ISC_SERVICE_UUID,
     build_fan_control_frame,
     build_target_control_frame,
     decode_targets,
@@ -158,6 +159,7 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
     async def _session(self, client: BleakClient) -> None:
         self._client = client
+        await self._async_collect_gatt_diagnostics(client)
         self._set_available(True)
 
         async def _read_once() -> None:
@@ -193,6 +195,50 @@ class Isc027bwCoordinator(InkbirdBbqCoordinator):
 
         self._client = None
         self._set_available(False)
+
+    async def _async_collect_gatt_diagnostics(self, client: BleakClient) -> None:
+        """Read the complete ISC-027BW GATT table without unknown writes."""
+        readable: dict[str, str] = {}
+        properties: dict[str, list[str]] = {}
+        services: dict[str, list[str]] = {}
+
+        for service in client.services:
+            service_uuid = service.uuid.lower()
+            characteristic_uuids: list[str] = []
+
+            for characteristic in service.characteristics:
+                uuid = characteristic.uuid.lower()
+                characteristic_uuids.append(uuid)
+                properties[uuid] = sorted(characteristic.properties)
+
+                if "read" not in characteristic.properties:
+                    continue
+
+                try:
+                    raw = bytes(await client.read_gatt_char(characteristic))
+                except Exception as err:  # noqa: BLE001 - diagnostic probe only
+                    _LOGGER.debug(
+                        "ISC-027BW diagnostic read %s failed: %s",
+                        uuid,
+                        err,
+                    )
+                    continue
+
+                readable[uuid] = raw.hex()
+                _LOGGER.debug(
+                    "ISC-027BW diagnostic read %s: %s",
+                    uuid,
+                    raw.hex(),
+                )
+
+            services[service_uuid] = characteristic_uuids
+
+        self._publish(
+            gatt_services=services,
+            gatt_characteristic_properties=properties,
+            gatt_read_values=readable,
+            isc_service_uuid=ISC_SERVICE_UUID,
+        )
 
     @staticmethod
     def _decode_telemetry_values(data: bytes) -> dict[str, Any]:
