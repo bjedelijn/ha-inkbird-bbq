@@ -26,7 +26,7 @@ Until a stable tagged release is published, install it as a **custom HACS reposi
 4. Restart Home Assistant when HACS requests it.
 5. Add the discovered INKBIRD device from **Settings -> Devices & services**.
 
-The repository is still pre-release software. HACS currently follows the development version on \`main\`; a stable release/tag will be added later.
+The repository is still pre-release software. Tagged beta releases are published for HACS testing; stable release/tag will follow after hardware validation.
 
 ## Bluetooth proxy recommendation
 
